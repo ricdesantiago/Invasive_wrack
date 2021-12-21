@@ -1,0 +1,137 @@
+---
+title: "Invasive_wrack_manuscript_code"
+author: "Ric DeSantiago"
+date: "12/15/2021"
+output: html_document
+---
+
+```{r libraries}
+library(knitr)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(ggfortify)
+library(lme4)
+library(car)
+library(nlme)
+library(ggpubr)
+library(multcompView)
+library(boot)
+library(Hotelling)
+library(mvnTest)
+library(vegan)
+library(factoextra)
+library(FactoMineR)
+library(agricolae)
+library(glmm)
+```
+
+#Initial weight estimates
+```{r }
+#read and rename file, remove NAs
+regressions <- read.csv("regressiondata.csv",header=T)
+View(regressions)
+
+#subset abalone
+regressionsub<-subset(regressions, Species == "Ab")
+view(regressionsub)
+
+#explore data
+mean(regressionsub$Dissected_sum_drytissue)
+sd(regressionsub$Dissected_sum_drytissue)
+hist(regressionsub$Dissected_sum_drytissue)
+mean(regressionsub$Shell_L)
+sd(regressionsub$Shell_L)
+hist(regressionsub$Shell_L)
+
+#simple scatterplot and pearson correlation
+plot(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L, data = regressionsub, main = "scatterplot")
+cor(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L)
+
+
+#Abalone models 
+#model 1
+#regression to predict dry tissue
+mod<-lm(Dissected_sum_drytissue ~ Shell_L, data = regressionsub)
+summary(mod)
+attributes(mod)
+
+#add the line
+abregplot<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Total Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+
+
+#model 2
+
+#regression to predict body dry tissue
+mod2<-lm(Dissected_ab_nongonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod2)
+attributes(mod2)
+
+#add the line
+abregplot2<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_nongonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Foot Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_nongonad_dry_weight ~ regressionsub$Shell_L)) 
+
+
+#Model3
+
+#regression to predict gill/gut/gonad tissue
+mod3<-lm(Dissected_ab_gonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod3)
+attributes(mod3)
+
+#add the line
+abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Gill/gut/gonad complex Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+
+
+
+#Tegula Model
+#subset abalone
+regressiontegsub<-subset(regressions, Species == "Teg")
+view(regressiontegsub)
+
+#explore data
+mean(regressiontegsub$Dissected_sum_drytissue)
+sd(regressiontegsub$Dissected_sum_drytissue)
+hist(regressiontegsub$Dissected_sum_drytissue)
+
+#model4 dry tegula tissue
+mod4<-lm(Dissected_sum_drytissue ~ Real_L, data = regressiontegsub)
+summary(mod4)
+attributes(mod4)
+
+#add the line
+abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytissue, main = "regression",
+     xlab = "Shell Length", ylab = "Tegula Whole Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
+
+ 
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
