@@ -26,15 +26,113 @@ library(agricolae)
 library(glmm)
 ```
 
+
+#Field Surveys
+```{r}
+
+wrack<-read.csv("InvasiveWrackSurveySNIJan2020.csv", header = TRUE)
+view(wrack)
+Grazer_Survey_Data <- read.csv("GrzrOnOffSurveySNIJan2020.csv") 
+view(Grazer_Survey_Data)
+
+```
+
+#Wrack surveys
+```{r}
+#make a new column in datasheet for the proportion of total wrack patty area made up of sargassum
+wrack$propsarg <- wrack$sarg_total / wrack$ellipse_A_m2
+
+#make new column to show proportion of total made up of macrocystis (1-sargassum)
+wrack$propmac<- 1 - wrack$propsarg
+
+#make graph to show these proportions
+ggplot(data=wrack, aes(x=site, y=propmac, fill=propsarg)) +
+  geom_bar(stat="identity")
+
+```
+
+#Invasive Wrack usage survey
+```{r}
+Grazer_Survey_Data <- read.csv("GrzrOnOffSurveySNIJan2020.csv") 
+
+#we want to remove any row that has double 0's, so a 0 for on and a 0 for off, this is because not every recorder recorded 0's when animals weren't seen. Therefore, by keeping double 0's in, we're inflating the likelihood of not finding an animal
+
+Grazer_Survey_Data_edited <- Grazer_Survey_Data 
+Grazer_Survey_Data_edited<- mutate(Grazer_Survey_Data_edited, Grazer_sum = on_wrack + off_wrack) 
+filter(Grazer_Survey_Data_edited, Grazer_sum != 0)
+#this removed 13 observations
+
+#create a dataframe with just important columns
+Grazer_Survey_Data_reduced <- na.omit(Grazer_Survey_Data_edited[, -c(1:3, 5, 7)])
+
+#Change to long format
+Grazer_Survey_Data_long <- gather(data = Grazer_Survey_Data_reduced, 
+                                 key = "Wrack.Use", value = "Grazer_sum", c(on_wrack, off_wrack), factor_key = TRUE)
+
+#Barplot
+barplot<- ggplot(Grazer_Survey_Data_long, aes(fill=Wrack.Use, y=Grazer_sum, x=grzr_sp)) + 
+    geom_bar(position="dodge", stat="identity")
+
+barplot
+
+
+pdf(file = "On.off_grazersurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Bar_g <- ggplot(data=meanAbundance_grazer,
+                      aes(y=mean_Abundance, 
+                          x=grzr_sp, 
+                          fill = Wrack.Use)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Bar_g + theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Grazer") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Count (max 20)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_Abundance - SE, 
+                    ymax=mean_Abundance + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(name = "Wrack usage",
+                    values = c("#999999", "#009E73")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.18,.88)) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                     breaks = pretty(c(0,20), n = 5), 
+                     limits = c(0,20))
+
+dev.off()
+
+#let's extract the sample sizes for each of the grazers bc we didn't see grazers everytime
+
+Grazer_Survey_Data_reduced %>% 
+  count(grzr_sp)
+
+```
+
+
 #Initial weight estimates
 ```{r }
-#read and rename file, remove NAs
+#read and rename file
 regressions <- read.csv("regressiondata.csv",header=T)
 View(regressions)
 
 #subset abalone
 regressionsub<-subset(regressions, Species == "Ab")
 
+#subset tegula
+regressiontegsub<-subset(regressions, Species == "Teg")
+view(regressiontegsub)
+
+```
+
+## Abalone Models
+```{r }
 
 #explore data
 mean(regressionsub$Dissected_sum_drytissue)
@@ -90,12 +188,12 @@ abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_we
      pch = 19, frame = FALSE) +
 abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
 
+```
 
 
+## Tegula Models
+```{r }
 #Tegula Model
-#subset abalone
-regressiontegsub<-subset(regressions, Species == "Teg")
-view(regressiontegsub)
 
 #explore data
 mean(regressiontegsub$Dissected_sum_drytissue)
@@ -115,23 +213,3 @@ abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L))
 
  
 ```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
