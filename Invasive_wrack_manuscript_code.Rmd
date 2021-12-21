@@ -34,7 +34,7 @@ View(regressions)
 
 #subset abalone
 regressionsub<-subset(regressions, Species == "Ab")
-view(regressionsub)
+
 
 #explore data
 mean(regressionsub$Dissected_sum_drytissue)
