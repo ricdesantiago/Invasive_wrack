@@ -4,7 +4,7 @@ author: "Ric DeSantiago"
 date: "12/15/2021"
 output: html_document
 ---
-
+#libraries
 ```{r libraries}
 library(knitr)
 library(tidyverse)
@@ -24,7 +24,9 @@ library(factoextra)
 library(FactoMineR)
 library(agricolae)
 library(glmm)
-
+library(HH)
+library(ggpubr)
+library(rstatix)
 #hi
 ```
 
@@ -214,4 +216,171 @@ abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytis
 abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
 
  
+```
+
+#Performance Assays March-April 2020
+```{r}
+#load data
+performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
+view(performance)
+na.omit(performance)
+
+is.numeric(performance$wetmass_total_Wd)
+performance$wetmass_total_Wd<-as.numeric(performance$wetmass_total_Wd)
+is.factor(performance$treatment)
+performance$treatment<-as.factor(performance$treatment)
+
+#create new column to look at weight difference (Wf-Wi) as a percent of initial weight (Wd/Wi *100)
+performance<-mutate(performance, percent_change = performance$wetmass_total_Wd / performance$wetmass_i* 100)
+view(performance)
+
+
+```
+
+## Tegula
+```{r}
+
+#subset data for tegula
+tegulaperformance<-subset(performance, grazer_spp.== "tegula")
+
+#histogram
+ggplot(tegulaperformance, aes(x=terminal_dry_mass)) + geom_histogram()
+
+#make boxplot of percent change by diet
+ggplot(tegulaperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("T. funebralis percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
+
+
+#make boxplot of final tissue dry mass by diet
+ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+#make boxplot of final shell dry mass by diet
+ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+#run analysis of variance using aov function
+tegaov<- aov(tegulaperformance$percent_change ~ tegulaperformance$diet)
+#view aov stats
+summary(tegaov)
+
+#check assumptions of ANOVA
+# check Levene's test for constant variance
+leveneTest(tegaov)
+## null hypothesis is that we have constant variance
+### P=0.55, do not reject the hypothesis
+
+#check the normality of the residuals
+qqnorm(tegaov$residuals)
+shapiro.test(tegaov$residuals)
+##resuduals are normally distributed
+
+#Tukeys post hoc test
+teg.aov.HSD <- HSD.test(tegaov, trt = 'tegulaperformance$diet') 
+print(teg.aov.HSD)
+plot(teg.aov.HSD)
+
+```
+
+
+
+##Red Abalone
+```{r}
+
+#subset data for tegula
+redabaloneperformance<-subset(performance, grazer_spp.== "red abalone")
+view(redabaloneperformance)
+#histogram
+ggplot(redabaloneperformance, aes(x=redabaloneperformance$percent_change)) + geom_histogram(binwidth=5)
+
+#make boxplot of percent change in wetmass by diet
+ggplot(redabaloneperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("H. rufescens percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final tissue dry mass by diet
+ggplot(redabaloneperformance, aes(x=diet, y=terminal_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final gonad dry mass by diet
+ggplot(redabaloneperformance, aes(x=diet, y=gonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Gonad Dry Mass (g)") + ggtitle("H. rufescens final gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final nongonad dry mass by diet
+ggplot(redabaloneperformance, aes(x=diet, y=nongonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final non-gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final shell dry mass by diet
+ggplot(redabaloneperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("H. rufescens final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+# Build the linear model to test normality
+model  <- lm(terminal_dry_mass ~ diet, data = redabaloneperformance)
+# Create a QQ plot of residuals
+ggqqplot(residuals(model))
+#there is a slight U shaped pattern in the data where the distribution deviates from the expected line in the upward direction on both ends and droops in the middle
+
+#testing normality with a Shapiro-Wilk test
+shapiro_test(residuals(model))
+#SW test rejects the Ho(p=0.01308574), thus we accept the alternative H that the data are not normally distributed.
+
+#Since the data are not normal, we can't use a Barlette test for equal variance, instead we will use a Levene Test
+leveneTest(terminal_dry_mass~diet, data=redabaloneperformance)
+#Levene test fails to reject the null Ho (p-value = 0.07774), thus we accept the hypothesis that our variances are equal
+
+#general linear model will not work for our data if we were just looking at the impact of diet on abalone mass, however, we want to account for starting differences in weight.
+##because our initial weights were in wet mass, they will be higher in total value and introduce more variablity due to water weight, thus, we cannot use those values
+###We will account for initial weights of animals by estimating initial dry mass using shell length to predict dry mass as calculated using our intial sample's above in "initial weight estimates"
+####We calculated these numbers using a linear regression and then input the estimated initial values into the original datasheet "PerformanceAssay2020.csv"
+
+#To remind us of the question we want to ask "does diet impact abalone weight?"
+##We think that diet will cause differences in weight, however, we know that initial weight matters and individual growth rates matter.
+###However, we are not interested in how individual abalone grow relative to each other, regardless, we need to account for the variation introduced by this.
+####We also know that starting weight matters, as many animals grow more rapidly when young and asymptote as they grow, etc.
+######Thus we can account for this variation with a generalised linear model
+
+testing <- glm(terminal_dry_mass ~ treatment + (1|est_total_dry_mass_i),
+                family=gaussian, data=redabaloneperformance)
+summary(testing)
+
+
+ancova_model <- aov(terminal_dry_mass ~ diet , data = redabaloneperformance)
+Anova(ancova_model, type="III")
+
+redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet') 
+print(redab.aov.HSD1)
+plot(redab.aov.HSD1)
+
+redab.ancova.HSD<-ancova()
+
+
+
+
+#Tukeys post hoc test
+redab.aov.HSD <- HSD.test(redabaov, trt = 'redabaloneperformance$diet') 
+print(redab.aov.HSD)
+plot(redab.aov.HSD)
+
+
+
+
+```
+
+##Righting times
+```{r}
+performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
+view(performance)
+na.omit(performance)
+
+#subset the abalone 
+abperf<-subset(performance, grazer_spp.== "red abalone")
+
+#wrangle data to show attempt 1 and attempt 2 side by side for each treatment
+gathered_obs<-gather(abperf, key="righting", value="time", 24:25)
+view(gathered_obs)
+na.omit(gathered_obs)
+is.factor(gathered_obs$righting)
+as.factor(gathered_obs$righting)
+
+#make boxplot
+ggplot(gathered_obs, aes(x= diet , y= time, fill = righting )) + theme_bw() + geom_boxplot()
+
+
+ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) +
+  geom_bar(stat="identity",position=position_dodge())+theme_minimal()
+
 ```
