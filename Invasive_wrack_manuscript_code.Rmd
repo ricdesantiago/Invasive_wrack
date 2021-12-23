@@ -239,7 +239,6 @@ view(performance)
 
 ## Tegula
 ```{r}
-
 #subset data for tegula
 tegulaperformance<-subset(performance, grazer_spp.== "tegula")
 
