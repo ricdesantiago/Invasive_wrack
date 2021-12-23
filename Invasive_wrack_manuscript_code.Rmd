@@ -278,6 +278,8 @@ teg.aov.HSD <- HSD.test(tegaov, trt = 'tegulaperformance$diet')
 print(teg.aov.HSD)
 plot(teg.aov.HSD)
 
+
+
 ```
 
 
