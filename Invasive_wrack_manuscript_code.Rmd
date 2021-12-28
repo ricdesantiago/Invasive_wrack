@@ -254,7 +254,7 @@ ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_mass, fill= treatment)) + g
 
 
 #make boxplot of final shell dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 
 #run analysis of variance using aov function
@@ -293,20 +293,40 @@ view(redabaloneperformance)
 #histogram
 ggplot(redabaloneperformance, aes(x=redabaloneperformance$percent_change)) + geom_histogram(binwidth=5)
 
+#view the data. We will be analyzing using either a GLM or ANOVA but we must look at the data to determine what is the best analysis. 
+
+#make boxplot for initial wet mass
+ggplot(redabaloneperformance, aes(x=diet, y=wetmass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab(" wet mass") + ggtitle("H. rufescens initial wet mass") + theme(plot.title =element_text(hjust = 0.5))
+#there seems to be a difference in means of starting weights of animals in each treatment, we can account for these different starting weights using initial weight as a covariate or a random factor
+
+#make boxplot of final wet weight
+ggplot(redabaloneperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab(" wet mass") + ggtitle("H. rufescens final wet mass") + theme(plot.title =element_text(hjust = 0.5))
+# the pattern we see here seems to be consistent with initial weight with the expected weight decrease in the starved treatment
+
 #make boxplot of percent change in wetmass by diet
 ggplot(redabaloneperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("H. rufescens percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot of final tissue dry mass by diet
 ggplot(redabaloneperformance, aes(x=diet, y=terminal_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+#means of mass change are positive for the three food diets and negative for the starved treatment
 
-#make boxplot of final gonad dry mass by diet
-ggplot(redabaloneperformance, aes(x=diet, y=gonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Gonad Dry Mass (g)") + ggtitle("H. rufescens final gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+#look at mass based on tissue type
+#make boxplot of final gonad/gill/digestive dry mass by diet
+ggplot(redabaloneperformance, aes(x=diet, y=gonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Gonad Dry Mass (g)") + ggtitle("H. rufescens final gonad/gill/GI mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
-#make boxplot of final nongonad dry mass by diet
+#make boxplot of final foot dry mass by diet
 ggplot(redabaloneperformance, aes(x=diet, y=nongonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final non-gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot of final shell dry mass by diet
 ggplot(redabaloneperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("H. rufescens final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+#test if there is a significant difference in initial wet masses using a simple anova
+initialmassabs<-aov(redabaloneperformance$wetmass_i ~ redabaloneperformance$diet)
+summary(initialmassabs)
+#we fail to reject the null hypothesis (p = 0.24), the means are not different. 
+
+#we can proceed to the analysis without using initial wet mass as a covariate. However, we can account for different starting points (intercepts) by using initial mass as a random factor.
 
 
 # Build the linear model to test normality
@@ -330,7 +350,7 @@ leveneTest(terminal_dry_mass~diet, data=redabaloneperformance)
 
 #To remind us of the question we want to ask "does diet impact abalone weight?"
 ##We think that diet will cause differences in weight, however, we know that initial weight matters and individual growth rates matter.
-###However, we are not interested in how individual abalone grow relative to each other, regardless, we need to account for the variation introduced by this.
+###But, we are not interested in how individual abalone grow relative to each other, regardless, we need to account for the variation introduced by this.
 ####We also know that starting weight matters, as many animals grow more rapidly when young and asymptote as they grow, etc.
 ######Thus we can account for this variation with a generalised linear model
 
