@@ -3,6 +3,8 @@ title: "Invasive_wrack_manuscript_code"
 author: "Ric DeSantiago"
 date: "12/15/2021"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 #libraries
 ```{r libraries}
@@ -27,11 +29,13 @@ library(glmm)
 library(HH)
 library(ggpubr)
 library(rstatix)
+library(bbmle)
+
 #hi
 ```
 
 
-#Field Surveys
+#Load Field Surveys
 ```{r}
 
 wrack<-read.csv("InvasiveWrackSurveySNIJan2020.csv", header = TRUE)
@@ -41,7 +45,7 @@ view(Grazer_Survey_Data)
 
 ```
 
-#Wrack surveys
+##Wrack surveys
 ```{r}
 #make a new column in datasheet for the proportion of total wrack patty area made up of sargassum
 wrack$propsarg <- wrack$sarg_total / wrack$ellipse_A_m2
@@ -55,7 +59,7 @@ ggplot(data=wrack, aes(x=site, y=propmac, fill=propsarg)) +
 
 ```
 
-#Invasive Wrack usage survey
+##Invasive Wrack usage survey
 ```{r}
 Grazer_Survey_Data <- read.csv("GrzrOnOffSurveySNIJan2020.csv") 
 
@@ -120,103 +124,116 @@ Grazer_Survey_Data_reduced %>%
 ```
 
 
-#Initial weight estimates
-```{r }
+#Choice Assays
+```{r}
+#import and name data
+LabAssayWholeTissue <-read.csv("LabAssaysWholeTissue.csv",header=T)
+View(LabAssayWholeTissue)
+
+#ensure factors are correctly read
+is.numeric(LabAssayWholeTissue$algae_Wd)
+is.factor(LabAssayWholeTissue$algae_spp.)
+
+
+AllSpeciesWholeTissue<-ggplot(LabAssayWholeTissue, aes(x=grazer_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw()   + xlab("Algae Species") + ylab("Total Consumed (g)") + ggtitle("Live algae choice assay") + theme(plot.title =element_text(hjust = 0.5))
+AllSpeciesWholeTissue
+```
+
+##Tegula
+
+```{r}
 #read and rename file
-regressions <- read.csv("regressiondata.csv",header=T)
-View(regressions)
+WholeTissueAssay <- read.csv("LabAssaysWholeTissue.csv",header=T)
+View(WholeTissueAssay)
 
-#subset abalone
-regressionsub<-subset(regressions, Species == "Ab")
+#subset the tegula rows
+tegula<-subset(LabAssayWholeTissue, grazer_spp.== "Tegula")
+#visualize data
+hist(tegula$algae_Wd[tegula$algae_spp.== 'macro'])
+hist(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'])
+#look at means and SDs
+mean(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+sd(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+mean(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
+sd(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
 
-#subset tegula
-regressiontegsub<-subset(regressions, Species == "Teg")
-view(regressiontegsub)
+#T test
+t.test(tegula$algae_Wd~tegula$algae_spp., paired= TRUE)
 
-```
-
-## Abalone Models
-```{r }
-
-#explore data
-mean(regressionsub$Dissected_sum_drytissue)
-sd(regressionsub$Dissected_sum_drytissue)
-hist(regressionsub$Dissected_sum_drytissue)
-mean(regressionsub$Shell_L)
-sd(regressionsub$Shell_L)
-hist(regressionsub$Shell_L)
-
-#simple scatterplot and pearson correlation
-plot(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L, data = regressionsub, main = "scatterplot")
-cor(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L)
-
-
-#Abalone models 
-#model 1
-#regression to predict dry tissue
-mod<-lm(Dissected_sum_drytissue ~ Shell_L, data = regressionsub)
-summary(mod)
-attributes(mod)
-
-#add the line
-abregplot<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Total Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
-
-
-#model 2
-
-#regression to predict body dry tissue
-mod2<-lm(Dissected_ab_nongonad_dry_weight ~ Shell_L, data = regressionsub)
-summary(mod2)
-attributes(mod2)
-
-#add the line
-abregplot2<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_nongonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Foot Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_nongonad_dry_weight ~ regressionsub$Shell_L)) 
-
-
-#Model3
-
-#regression to predict gill/gut/gonad tissue
-mod3<-lm(Dissected_ab_gonad_dry_weight ~ Shell_L, data = regressionsub)
-summary(mod3)
-attributes(mod3)
-
-#add the line
-abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Gill/gut/gonad complex Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+#make boxplot for tegula
+tegplot<- ggplot(tegula, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by T. funebralis") + theme(plot.title =element_text(hjust = 0.5)) 
+tegplot #show boxplot
 
 ```
 
 
-## Tegula Models
-```{r }
-#Tegula Model
+##Pachy
+```{r}
+#subset the Pachy rows
+pachy<-subset(LabAssayWholeTissue, grazer_spp.== "Pachy")
+#visualize data
+hist(pachy$algae_Wd[pachy$algae_spp.== 'macro'])
+hist(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'])
+#look at means and SDs
+mean(pachy$algae_Wd[pachy$algae_spp.== 'macro'],na.rm = T)
+sd(pachy$algae_Wd[pachy$algae_spp.== 'macro'],na.rm = T)
+mean(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'],na.rm = T)
+sd(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'],na.rm = T)
 
-#explore data
-mean(regressiontegsub$Dissected_sum_drytissue)
-sd(regressiontegsub$Dissected_sum_drytissue)
-hist(regressiontegsub$Dissected_sum_drytissue)
+#T test
+t.test(pachy$algae_Wd~pachy$algae_spp., paired= TRUE)
 
-#model4 dry tegula tissue
-mod4<-lm(Dissected_sum_drytissue ~ Real_L, data = regressiontegsub)
-summary(mod4)
-attributes(mod4)
-
-#add the line
-abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytissue, main = "regression",
-     xlab = "Shell Length", ylab = "Tegula Whole Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
-
- 
+#make boxplot for Pachy
+pachyplot<- ggplot(pachy, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() + guides(fill=F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by P. crassipes") + theme(plot.title =element_text(hjust = 0.5)) 
+pachyplot #show boxplot
 ```
+
+##Pagurus
+```{r}
+
+#subset the abalone rows
+pagurus<-subset(LabAssayWholeTissue, grazer_spp.== "Pagurus")
+#visualize data
+hist(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'])
+hist(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'])
+#look at means and SDs
+mean(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'],na.rm = T)
+sd(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'],na.rm = T)
+mean(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'],na.rm = T)
+sd(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'],na.rm = T)
+
+#T test
+t.test(pagurus$algae_Wd~pagurus$algae_spp., paired= TRUE)
+
+#make boxplot for abalone
+pagurusplot<- ggplot(pagurus, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() + guides(fill=F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by Pagurus") + theme(plot.title =element_text(hjust = 0.5)) 
+pagurusplot #show boxplot
+```
+
+####Abalone September 2019
+```{r}
+
+#subset the abalone rows
+abalone<-subset(LabAssayWholeTissue, grazer_spp.== "Haliotis cracherodii")
+#visualize data
+hist(abalone$algae_Wd[abalone$algae_spp.== 'macro'])
+hist(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'])
+#look at means and SDs
+mean(abalone$algae_Wd[abalone$algae_spp.== 'macro'],na.rm = T)
+sd(abalone$algae_Wd[abalone$algae_spp.== 'macro'],na.rm = T)
+mean(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'],na.rm = T)
+sd(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'],na.rm = T)
+
+#T test
+t.test(abalone$algae_Wd~abalone$algae_spp., paired= TRUE)
+
+#make boxplot for abalone
+abplot<- ggplot(abalone, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() +guides(fill = F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by H. cracherodii") + theme(plot.title =element_text(hjust = 0.5)) 
+abplot #show boxplot
+
+```
+
+
 
 #Performance Assays March-April 2020
 ```{r}
@@ -352,29 +369,33 @@ leveneTest(terminal_dry_mass~diet, data=redabaloneperformance)
 ##We think that diet will cause differences in weight, however, we know that initial weight matters and individual growth rates matter.
 ###But, we are not interested in how individual abalone grow relative to each other, regardless, we need to account for the variation introduced by this.
 ####We also know that starting weight matters, as many animals grow more rapidly when young and asymptote as they grow, etc.
-######Thus we can account for this variation with a generalised linear model
+######Thus we can account for this variation with a generalized linear model
 
-testing <- glm(terminal_dry_mass ~ treatment + (1|est_total_dry_mass_i),
-                family=gaussian, data=redabaloneperformance)
+testing <- glmm(terminal_dry_mass ~ diet + (1|est_total_dry_mass_i),
+                family=gaussian (link = "identity"), data=redabaloneperformance)
 summary(testing)
 
+mixed.model<-lmer(terminal_dry_mass ~ diet + (1|est_total_dry_mass_i), data = redabaloneperformance)
+summary(mixed.model, corr=F)
 
-ancova_model <- aov(terminal_dry_mass ~ diet , data = redabaloneperformance)
+dotchart(sort(xtabs(~ est_total_dry_mass_i), cex=0.7))
+
+
+
+
+
+
+
+
+
+
+
+ancova_model <- aov(terminal_dry_mass ~ diet*est_total_dry_mass_i, data = redabaloneperformance)
 Anova(ancova_model, type="III")
 
 redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet') 
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
-
-redab.ancova.HSD<-ancova()
-
-
-
-
-#Tukeys post hoc test
-redab.aov.HSD <- HSD.test(redabaov, trt = 'redabaloneperformance$diet') 
-print(redab.aov.HSD)
-plot(redab.aov.HSD)
 
 
 
@@ -404,4 +425,101 @@ ggplot(gathered_obs, aes(x= diet , y= time, fill = righting )) + theme_bw() + ge
 ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) +
   geom_bar(stat="identity",position=position_dodge())+theme_minimal()
 
+```
+#Initial weight estimates
+```{r }
+#read and rename file
+regressions <- read.csv("regressiondata.csv",header=T)
+View(regressions)
+
+#subset abalone
+regressionsub<-subset(regressions, Species == "Ab")
+
+#subset tegula
+regressiontegsub<-subset(regressions, Species == "Teg")
+view(regressiontegsub)
+
+```
+
+## Abalone Models
+```{r }
+
+#explore data
+mean(regressionsub$Dissected_sum_drytissue)
+sd(regressionsub$Dissected_sum_drytissue)
+hist(regressionsub$Dissected_sum_drytissue)
+mean(regressionsub$Shell_L)
+sd(regressionsub$Shell_L)
+hist(regressionsub$Shell_L)
+
+#simple scatterplot and pearson correlation
+plot(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L, data = regressionsub, main = "scatterplot")
+cor(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L)
+
+
+#Abalone models 
+#model 1
+#regression to predict dry tissue
+mod<-lm(Dissected_sum_drytissue ~ Shell_L, data = regressionsub)
+summary(mod)
+attributes(mod)
+
+#add the line
+abregplot<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Total Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+
+
+#model 2
+
+#regression to predict body dry tissue
+mod2<-lm(Dissected_ab_nongonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod2)
+attributes(mod2)
+
+#add the line
+abregplot2<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_nongonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Foot Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_nongonad_dry_weight ~ regressionsub$Shell_L)) 
+
+
+#Model3
+
+#regression to predict gill/gut/gonad tissue
+mod3<-lm(Dissected_ab_gonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod3)
+attributes(mod3)
+
+#add the line
+abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Gill/gut/gonad complex Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+
+```
+
+
+## Tegula Models
+```{r }
+#Tegula Model
+
+#explore data
+mean(regressiontegsub$Dissected_sum_drytissue)
+sd(regressiontegsub$Dissected_sum_drytissue)
+hist(regressiontegsub$Dissected_sum_drytissue)
+
+#model4 dry tegula tissue
+mod4<-lm(Dissected_sum_drytissue ~ Real_L, data = regressiontegsub)
+summary(mod4)
+attributes(mod4)
+
+#add the line
+abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytissue, main = "regression",
+     xlab = "Shell Length", ylab = "Tegula Whole Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
+
+ 
 ```
