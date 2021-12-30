@@ -29,7 +29,6 @@ library(glmm)
 library(HH)
 library(ggpubr)
 library(rstatix)
-library(bbmle)
 
 #hi
 ```
@@ -148,88 +147,183 @@ View(WholeTissueAssay)
 
 #subset the tegula rows
 tegula<-subset(LabAssayWholeTissue, grazer_spp.== "Tegula")
+view(tegula)
+
+#since controls were solely used for correction of autogenic growth, we can further subset to only look at the experimental treatments
+tegulachoice <- subset(tegula, trt == "exp")
+view(tegulachoice)
+
 #visualize data
-hist(tegula$algae_Wd[tegula$algae_spp.== 'macro'])
-hist(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'])
-#look at means and SDs
-mean(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
-sd(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+
+#look at the data in boxplots to visualize the spread around the median
+ggplot(tegulachoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+#there seems to be an outlier in each treatment that may be pulling distributions, however, we are leaving outliers in as they are biological real, some animals may simply eat more than others.
+
+#separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
+#sargassum
+tegulachoicesarg<-subset(tegulachoice, algae_spp. == "sargassum")
+ggplot(tegulachoicesarg, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
 mean(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
 sd(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
+#macrocystis
+tegulachoicemacro<-subset(tegulachoice, algae_spp. == "macro")
+ggplot(tegulachoicemacro, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+sd(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+
+#the data do not look normal for the samples, Ds of weight in sargassum tend to be right leaning while macro samples tend to be left learning
+#test for normality
+par(mfrow=c(2,2))
+qqnorm(tegulachoicemacro$algae_Wd)
+qqline(tegulachoicemacro$algae_Wd)
+qqnorm(tegulachoicesarg$algae_Wd)
+qqline(tegulachoicesarg$algae_Wd)
+
+#our data fail the normality assumption for a T-test
+##our data are not independent since they are a choice between two options of algae
+### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consuption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "t"otal consumed" between S. horneri and M. pyrifera.
+####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. Thus, the original data are not used, rather the mean, variance, and standard ddviation are baed on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
+
+#check for normality
+ggplot(tegulachoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+qqnorm(tegulachoice$algae_Wd)
+qqline(tegulachoice$algae_Wd)
+#there seems to be an outlier, however, the data look normally distributed around the theoretical line
+
+#we will conduct a paired-T test.
+## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
+## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
 #T test
-t.test(tegula$algae_Wd~tegula$algae_spp., paired= TRUE)
+t.test(tegulachoice$algae_Wd~tegulachoice$algae_spp., paired= TRUE)
+## we reject the null hypothesis (t = 5.7152, df = 13, p-value = 7.111e-05), there was a choice made between algae
 
-#make boxplot for tegula
-tegplot<- ggplot(tegula, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by T. funebralis") + theme(plot.title =element_text(hjust = 0.5)) 
-tegplot #show boxplot
+
+#make boxplot 
+ggplot(tegula, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by T. funebralis") + theme(plot.title =element_text(hjust = 0.5)) 
+
+#When given a choice between S. horneri and M. pyrifera, Tegula preferred M. pyrifera.
+
+##this will be repeated for all other grazers.
 
 ```
 
 
 ##Pachy
 ```{r}
-#subset the Pachy rows
+#subset the P. crassipes rows
 pachy<-subset(LabAssayWholeTissue, grazer_spp.== "Pachy")
+view(pachy)
+
+#since controls were solely used for correction of autogenic growth, we can further subset to only look at the experimental treatments
+pachychoice <- subset(pachy, trt == "exp")
+view(pachychoice)
+
 #visualize data
-hist(pachy$algae_Wd[pachy$algae_spp.== 'macro'])
-hist(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'])
-#look at means and SDs
-mean(pachy$algae_Wd[pachy$algae_spp.== 'macro'],na.rm = T)
-sd(pachy$algae_Wd[pachy$algae_spp.== 'macro'],na.rm = T)
-mean(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'],na.rm = T)
-sd(pachy$algae_Wd[pachy$algae_spp.== 'sargassum'],na.rm = T)
+
+#look at the data in boxplots to visualize the spread around the median
+ggplot(pachychoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+#there seems to be an outlier in the S. horneri treatment that may be pulling the distribution
+
+##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
+
+#check for normality
+ggplot(pachychoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+qqnorm(pachychoice$algae_Wd)
+qqline(pachychoice$algae_Wd)
+#there seems to be an outlier, however, the data look normally distributed around the theoretical line
+
+#we will conduct a paired-T test.
+## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
+## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
 #T test
-t.test(pachy$algae_Wd~pachy$algae_spp., paired= TRUE)
+t.test(pachychoice$algae_Wd~pachychoice$algae_spp., paired= TRUE)
+## we fail reject the null hypothesis (t = 0.073928, df = 13, p-value = 0.9422), there was no choice made between algae
 
-#make boxplot for Pachy
-pachyplot<- ggplot(pachy, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() + guides(fill=F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by P. crassipes") + theme(plot.title =element_text(hjust = 0.5)) 
-pachyplot #show boxplot
+
+#make boxplot 
+ggplot(pachy, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by P. crassipes ") + theme(plot.title =element_text(hjust = 0.5)) 
+
+#When given a choice between S. horneri and M. pyrifera, P. Crassipes showed no preference.
 ```
 
 ##Pagurus
 ```{r}
 
-#subset the abalone rows
+#subset the P. samuelis rows
 pagurus<-subset(LabAssayWholeTissue, grazer_spp.== "Pagurus")
+view(pagurus)
+
+#since controls were solely used for correction of autogenic growth, we can further subset to only look at the experimental treatments
+paguruschoice <- subset(pagurus, trt == "exp")
+view(paguruschoice)
+
 #visualize data
-hist(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'])
-hist(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'])
-#look at means and SDs
-mean(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'],na.rm = T)
-sd(pagurus$algae_Wd[pagurus$algae_spp.== 'macro'],na.rm = T)
-mean(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'],na.rm = T)
-sd(pagurus$algae_Wd[pagurus$algae_spp.== 'horneri'],na.rm = T)
+
+#look at the data in boxplots to visualize the spread around the median
+ggplot(paguruschoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+
+##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
+
+#check for normality
+ggplot(paguruschoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+qqnorm(paguruschoice$algae_Wd)
+qqline(paguruschoice$algae_Wd)
+#there seems to be an outlier on both ends, however, the data look normally distributed around the theoretical line
+
+#we will conduct a paired-T test.
+## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
+## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
 #T test
-t.test(pagurus$algae_Wd~pagurus$algae_spp., paired= TRUE)
+t.test(paguruschoice$algae_Wd~paguruschoice$algae_spp., paired= TRUE)
+## we reject the null hypothesis (t = -3.7593, df = 13, p-value = 0.002385), there was a choice made between algae
 
-#make boxplot for abalone
-pagurusplot<- ggplot(pagurus, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() + guides(fill=F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by Pagurus") + theme(plot.title =element_text(hjust = 0.5)) 
-pagurusplot #show boxplot
+
+#make boxplot 
+ggplot(pagurus, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by P. samuelis ") + theme(plot.title =element_text(hjust = 0.5)) 
+
+#When given a choice between S. horneri and M. pyrifera, P. samuelis showed a preference for sargassum .
 ```
 
-####Abalone September 2019
+##Abalone September 2019
 ```{r}
 
-#subset the abalone rows
+#subset the A. cracherodii rows
 abalone<-subset(LabAssayWholeTissue, grazer_spp.== "Haliotis cracherodii")
+view(abalone)
+
+#since controls were solely used for correction of autogenic growth, we can further subset to only look at the experimental treatments
+abalonechoice <- subset(abalone, trt == "Experimental")
+view(abalonechoice)
+
 #visualize data
-hist(abalone$algae_Wd[abalone$algae_spp.== 'macro'])
-hist(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'])
-#look at means and SDs
-mean(abalone$algae_Wd[abalone$algae_spp.== 'macro'],na.rm = T)
-sd(abalone$algae_Wd[abalone$algae_spp.== 'macro'],na.rm = T)
-mean(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'],na.rm = T)
-sd(abalone$algae_Wd[abalone$algae_spp.== 'sargassum'],na.rm = T)
+
+#look at the data in boxplots to visualize the spread around the median
+ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+
+##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
+
+#check for normality
+ggplot(abalonechoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.5)
+qqnorm(abalonechoice$algae_Wd)
+qqline(abalonechoice$algae_Wd)
+#the data seem pretty normal
+
+#we will conduct a paired-T test.
+## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
+## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
 #T test
-t.test(abalone$algae_Wd~abalone$algae_spp., paired= TRUE)
+t.test(abalonechoice$algae_Wd~abalonechoice$algae_spp., paired= TRUE)
+## we reject the null hypothesis (4.5053, df = 15, p-value = 0.0004189), there was a choice made between algae
 
-#make boxplot for abalone
-abplot<- ggplot(abalone, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw() +guides(fill = F) + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue Consumption by H. cracherodii") + theme(plot.title =element_text(hjust = 0.5)) 
-abplot #show boxplot
+
+#make boxplot 
+ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by H. cracherodii ") + theme(plot.title =element_text(hjust = 0.5)) 
+
+#When given a choice between S. horneri and M. pyrifera, H. cracherodii showed a preference for M. pyriferae.
 
 ```
 
@@ -247,68 +341,29 @@ performance$wetmass_total_Wd<-as.numeric(performance$wetmass_total_Wd)
 is.factor(performance$treatment)
 performance$treatment<-as.factor(performance$treatment)
 
-#create new column to look at weight difference (Wf-Wi) as a percent of initial weight (Wd/Wi *100)
+
+#create new column to look at weight difference (Wf-Wi) as a percent of initial weight (Wd/Wi *100) to visualize rough weight differences
 performance<-mutate(performance, percent_change = performance$wetmass_total_Wd / performance$wetmass_i* 100)
 view(performance)
 
-
 ```
-
-## Tegula
-```{r}
-#subset data for tegula
-tegulaperformance<-subset(performance, grazer_spp.== "tegula")
-
-#histogram
-ggplot(tegulaperformance, aes(x=terminal_dry_mass)) + geom_histogram()
-
-#make boxplot of percent change by diet
-ggplot(tegulaperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("T. funebralis percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
-
-
-#make boxplot of final tissue dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
-
-
-#make boxplot of final shell dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
-
-
-#run analysis of variance using aov function
-tegaov<- aov(tegulaperformance$percent_change ~ tegulaperformance$diet)
-#view aov stats
-summary(tegaov)
-
-#check assumptions of ANOVA
-# check Levene's test for constant variance
-leveneTest(tegaov)
-## null hypothesis is that we have constant variance
-### P=0.55, do not reject the hypothesis
-
-#check the normality of the residuals
-qqnorm(tegaov$residuals)
-shapiro.test(tegaov$residuals)
-##resuduals are normally distributed
-
-#Tukeys post hoc test
-teg.aov.HSD <- HSD.test(tegaov, trt = 'tegulaperformance$diet') 
-print(teg.aov.HSD)
-plot(teg.aov.HSD)
-
-
-
-```
-
 
 
 ##Red Abalone
 ```{r}
 
-#subset data for tegula
+#subset data for abalone
 redabaloneperformance<-subset(performance, grazer_spp.== "red abalone")
 view(redabaloneperformance)
+
+#visualize data
+ggplot(redabaloneperformance, aes(y=redabaloneperformance$percent_change, x=diet)) + geom_boxplot()
 #histogram
-ggplot(redabaloneperformance, aes(x=redabaloneperformance$percent_change)) + geom_histogram(binwidth=5)
+ggplot(redabaloneperformance, aes(x=redabaloneperformance$percent_change)) + geom_histogram(binwidth=1)
+#the data look fairly normal when combined, the histogram shows the distribution tailes to the left having some numbers in the negative, this is likely due to the starved treatment.
+## Starved treatment is used as a control and to detect if any food treatment is worse than starvation (e.g., toxic and harmful algae)
+
+#From here forward, we will compare data without the starved treatment
 
 #view the data. We will be analyzing using either a GLM or ANOVA but we must look at the data to determine what is the best analysis. 
 
@@ -401,6 +456,54 @@ plot(redab.aov.HSD1)
 
 
 ```
+
+
+## Tegula
+```{r}
+#subset data for tegula
+tegulaperformance<-subset(performance, grazer_spp.== "tegula")
+
+#histogram
+ggplot(tegulaperformance, aes(x=terminal_dry_mass)) + geom_histogram()
+
+#make boxplot of percent change by diet
+ggplot(tegulaperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("T. funebralis percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
+
+
+#make boxplot of final tissue dry mass by diet
+ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+#make boxplot of final shell dry mass by diet
+ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
+#run analysis of variance using aov function
+tegaov<- aov(tegulaperformance$percent_change ~ tegulaperformance$diet)
+#view aov stats
+summary(tegaov)
+
+#check assumptions of ANOVA
+# check Levene's test for constant variance
+leveneTest(tegaov)
+## null hypothesis is that we have constant variance
+### P=0.55, do not reject the hypothesis
+
+#check the normality of the residuals
+qqnorm(tegaov$residuals)
+shapiro.test(tegaov$residuals)
+##resuduals are normally distributed
+
+#Tukeys post hoc test
+teg.aov.HSD <- HSD.test(tegaov, trt = 'tegulaperformance$diet') 
+print(teg.aov.HSD)
+plot(teg.aov.HSD)
+
+
+
+```
+
+
 
 ##Righting times
 ```{r}
@@ -522,4 +625,163 @@ abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytis
 abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
 
  
+```
+
+#Figures for Manuscript
+```{r}
+#choice
+par(mfrow=c(2,2))
+abplot
+tegplot
+pachyplot
+pagurusplot
+
+LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T)
+View(LabAssayWholeTissue)
+choice <- LabAssayWholeTissue[1:232,]
+
+fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE) + theme_bw()  + xlab("") + ylab("Algae Mass Consumed (g)") + ggtitle("Food Choice Assay") + theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=12),plot.title =element_text(hjust = 0.5)) + 
+  facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", "Tegula" = "T. funebralis", "Pachy" = "P. crassipes", "Pagurus" = "P. samuelis")),)
+
+fig1
+
+view(choice)
+
+#performance
+#this figure only shows final dry mass of non-shell tissue for tegula and red abalone. All other tissue will be in the appendix
+
+fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_mass, fill= diet)) + 
+  geom_boxplot(show.legend = FALSE) + theme_bw() + 
+  xlab("Diet") + 
+  ylab("Dry Tissue Mass (g)") + 
+  ggtitle("Herbivore Dry Tissue Mass by Diet") + 
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=12), plot.title =element_text(hjust = 0.5)) +
+  facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "H. rufescence", "tegula" = "T. funebralis"))) +
+  scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera",
+                              "mixed" = "Mixed","sargassum" = "S. horneri")) +
+   geom_vline(xintercept=c(1.5),linetype="dotted") +
+   theme(axis.text.x = element_text(face="italic", 
+                           size=10))
+fig2
+```
+
+
+#Analysis for manuscript 1
+
+```{r}
+
+#load data
+performanceassay<-read.csv("PerformanceAssays2020.csv", header=TRUE,)
+view(performanceassay)
+na.omit(performanceassay)
+
+#R decided to add phantom rows of NA at the bottom. Subset the dataframe to only keep the rows with actual information
+performance <- performanceassay[1:160,]
+
+#performance assay
+performance2 <- subset(performance, diet != "starved" ) #filter out the starved treatment for the model
+view(performance2)
+
+#check normality
+qqnorm(performance2$terminal_dry_mass)
+plot(performance2$terminal_dry_mass)
+
+#look at them individually
+redabs<-subset(performance2, grazer_spp.== "red abalone")
+hist(redabs$terminal_dry_mass)
+tegs<-subset(performance2, grazer_spp.== "tegula")
+hist(tegs$terminal_dry_mass)
+
+
+#create simple model 
+m <- lm(terminal_dry_mass ~ diet, performance2)
+summary(m)
+par(mfrow = c(2, 2))
+plot(m)
+anova(m)
+
+m2<-lm(terminal_dry_mass ~ diet*grazer_spp., performance2)
+summary(m2)
+par(mfrow = c(2, 2))
+plot(m2)
+anova(m2)
+
+
+m3<-glmer(terminal_dry_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i) , family = gaussian, performance2)
+summary(m3)
+par(mfrow = c(2, 2))
+plot(m3)
+anova(m3)
+
+#Tukeys post hoc test
+hsd <- HSD.test(m3, trt = 'diet') 
+print(m3)
+plot(m3)
+
+#check assumptions of ANOVA
+# check Levene's test for constant variance
+leveneTest(m)
+## null hypothesis is that we have constant variance
+### P=0.43, do not reject the hypothesis
+
+#check the normality of the residuals
+qqnorm(m$residuals)
+shapiro.test(m$residuals)
+##resuduals are normally distributed
+
+#Tukeys post hoc test
+hsd <- HSD.test(m2, trt = 'diet') 
+print(hsd)
+plot(hsd)
+
+#does differnt diet affect weight of grazers
+m3<- glmer(terminal_dry_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i), data = performance2, family = binomial)
+
+anova(m3)
+
+
+
+
+
+
+
+
+
+
+
+model2<- aov(terminal_dry_mass ~ diet + est_total_dry_mass_i, data = tegs)
+Anova(model2,type="III")
+
+hsd2 <- HSD.test(model2, trt = 'diet') 
+print(hsd2)
+plot(hsd2)
+
+
+test<- aov(terminal_dry_mass ~ diet, data = redabs)
+Anova(test)
+
+hsd1 <- HSD.test(test, trt = 'diet') 
+print(hsd1)
+plot(hsd1)
+
+
+
+
+
+model1<- aov(terminal_dry_mass ~ diet + est_total_dry_mass_i, data = redabs)
+Anova(model1,type="III")
+
+hsd <- HSD.test(model1, trt = 'diet') 
+print(hsd)
+plot(hsd)
+
+
+test<- aov(terminal_dry_mass ~ diet, data = redabs)
+Anova(test)
+
+hsd1 <- HSD.test(test, trt = 'diet') 
+print(hsd1)
+plot(hsd1)
 ```
