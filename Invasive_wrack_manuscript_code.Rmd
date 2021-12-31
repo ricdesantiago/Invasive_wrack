@@ -350,6 +350,7 @@ view(performance)
 
 
 ##Red Abalone
+###Exploring Data
 ```{r}
 
 #subset data for abalone
@@ -357,121 +358,317 @@ redabaloneperformance<-subset(performance, grazer_spp.== "red abalone")
 view(redabaloneperformance)
 
 #visualize data
-ggplot(redabaloneperformance, aes(y=redabaloneperformance$percent_change, x=diet)) + geom_boxplot()
+ggplot(redabaloneperformance, aes(y=terminal_dry_tissue_mass, x=diet)) + geom_boxplot()
 #histogram
-ggplot(redabaloneperformance, aes(x=redabaloneperformance$percent_change)) + geom_histogram(binwidth=1)
+ggplot(redabaloneperformance, aes(x=terminal_dry_tissue_mass)) + geom_histogram(binwidth=0.1)
 #the data look fairly normal when combined, the histogram shows the distribution tailes to the left having some numbers in the negative, this is likely due to the starved treatment.
-## Starved treatment is used as a control and to detect if any food treatment is worse than starvation (e.g., toxic and harmful algae)
+##we will conduct ANOVA or GLMM if assumptions are met. Starved treatment is used as a control and to detect if any food treatment is worse than starvation (e.g., toxic and harmful algae), thus, starved treatments will not be used unless a food treatment causes more mass loss than starved. 
 
-#From here forward, we will compare data without the starved treatment
-
-#view the data. We will be analyzing using either a GLM or ANOVA but we must look at the data to determine what is the best analysis. 
+#explore the data 
 
 #make boxplot for initial wet mass
-ggplot(redabaloneperformance, aes(x=diet, y=wetmass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab(" wet mass") + ggtitle("H. rufescens initial wet mass") + theme(plot.title =element_text(hjust = 0.5))
-#there seems to be a difference in means of starting weights of animals in each treatment, we can account for these different starting weights using initial weight as a covariate or a random factor
+ggplot(redabaloneperformance, aes(x=diet, y=wetmass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("H. rufescens Wet Mass (g)") + ggtitle("H. rufescens initial wet mass") + theme(plot.title =element_text(hjust = 0.5))
 
-#make boxplot of final wet weight
-ggplot(redabaloneperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab(" wet mass") + ggtitle("H. rufescens final wet mass") + theme(plot.title =element_text(hjust = 0.5))
-# the pattern we see here seems to be consistent with initial weight with the expected weight decrease in the starved treatment
+#make boxplot of final wet mass
+ggplot(redabaloneperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("H. rufescens Wet Mass (g)") + ggtitle("H. rufescens final wet mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
-#make boxplot of percent change in wetmass by diet
-ggplot(redabaloneperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("H. rufescens percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
+#make boxplot for mass difference
+ggplot(redabaloneperformance, aes(x=diet, y=wetmass_total_Wd , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("H. rufescens change in wet Mass (g)") + ggtitle("H. rufescens mass change by diet") + theme(plot.title =element_text(hjust = 0.5))
+#aside from the variabilty in weights due to water, starved treatment has a mean below zero while others are above 
 
-#make boxplot of final tissue dry mass by diet
-ggplot(redabaloneperformance, aes(x=diet, y=terminal_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
-#means of mass change are positive for the three food diets and negative for the starved treatment
 
-#look at mass based on tissue type
+#look at DRY mass based on tissue type
+
+#make boxplot of final dry mass
+ggplot(redabaloneperformance, aes(x=diet, y=terminal_dry_tissue_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("H. rufescens Dry Mass (g)") + ggtitle("H. rufescens final wet dry by diet") + theme(plot.title =element_text(hjust = 0.5))
+
 #make boxplot of final gonad/gill/digestive dry mass by diet
-ggplot(redabaloneperformance, aes(x=diet, y=gonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Gonad Dry Mass (g)") + ggtitle("H. rufescens final gonad/gill/GI mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+ggplot(redabaloneperformance, aes(x=diet, y=terminal_gonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Gonad Dry Mass (g)") + ggtitle("H. rufescens final gonad/gill/GI mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot of final foot dry mass by diet
-ggplot(redabaloneperformance, aes(x=diet, y=nongonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final non-gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+ggplot(redabaloneperformance, aes(x=diet, y=terminal_nongonad_dry_mass, fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("H. rufescens final non-gonad dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot of final shell dry mass by diet
 ggplot(redabaloneperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("H. rufescens final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+```
 
+###Estimating Initial Masses
+```{r}
 
 #test if there is a significant difference in initial wet masses using a simple anova
 initialmassabs<-aov(redabaloneperformance$wetmass_i ~ redabaloneperformance$diet)
 summary(initialmassabs)
-#we fail to reject the null hypothesis (p = 0.24), the means are not different. 
+#we fail to reject the null hypothesis (p = 0.24), the treatments are not different
 
-#we can proceed to the analysis without using initial wet mass as a covariate. However, we can account for different starting points (intercepts) by using initial mass as a random factor.
+##To reduce variance due to water weight, we estimated initial DRY masses through regression analysis using shell lengths to predict dry weight using a sub-sample of the population before the experiment
+
+#read and rename file
+regressions <- read.csv("regressiondata.csv",header=T)
+View(regressions)
+
+#subset abalone
+regressionsub<-subset(regressions, Species == "Ab")
+
+#explore data
+mean(regressionsub$Dissected_total_dry_weight)
+sd(regressionsub$Dissected_total_dry_weight)
+hist(regressionsub$Dissected_total_dry_weight)
+mean(regressionsub$Shell_L)
+sd(regressionsub$Shell_L)
+hist(regressionsub$Shell_L)
+
+#simple scatterplot and pearson correlation
+plot(regressionsub$Dissected_total_dry_weight, regressionsub$Shell_L, data = regressionsub, main = "scatterplot")
+cor(regressionsub$Dissected_total_dry_weight, regressionsub$Shell_L)
+
+#Abalone models 
+
+#model 1
+#regression to predict total dry mass from shell length
+mod<-lm(Dissected_total_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod)
+attributes(mod)
+
+#add the line
+abregplot<- plot(regressionsub$Shell_L, regressionsub$Dissected_total_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Total Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_total_dry_weight ~ regressionsub$Shell_L)) 
+#Model 1: Total sum of dry tissue     Formula y= 0.56064x -22.41711
 
 
-# Build the linear model to test normality
-model  <- lm(terminal_dry_mass ~ diet, data = redabaloneperformance)
+#model 2
+#regression to predict foot dry tissue mass from shell length
+mod2<-lm(Dissected_nongonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod2)
+attributes(mod2)
+
+#add the line
+abregplot2<- plot(regressionsub$Shell_L, regressionsub$Dissected_nongonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Foot Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_nongonad_dry_weight ~ regressionsub$Shell_L)) 
+#Model 2: Foot dry tissue               Formal y= 0.10928x - 4.64417
+
+
+#Model3
+
+#regression to predict gill/gut/gonad tissue mass from shell length
+mod3<-lm(Dissected_gonad_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod3)
+attributes(mod3)
+
+#add the line
+abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Gill/gut/gonad complex Dry Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+#Model 3: gill/gut/gonad complex dry tissue        Formula y= 0.049014x -1.990739
+
+#model 4
+
+#regression to predict soft tissue mass from shell length
+mod4<-lm(Dissected_tissue_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod4)
+attributes(mod4)
+
+#add the line
+abregplot4<- plot(regressionsub$Shell_L, regressionsub$Dissected_tissue_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Total soft tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_tissue_dry_weight ~ regressionsub$Shell_L)) 
+#Model 4: total soft dry tissue        Formula y= 0.15829x -6.63491
+
+#model 5
+#regression to predict shell mass from shell length
+mod5<-lm(Dissected_shell_dry_weight ~ Shell_L, data = regressionsub)
+summary(mod5)
+attributes(mod5)
+
+#add the line
+abregplot5<- plot(regressionsub$Shell_L, regressionsub$Dissected_shell_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Total soft tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(regressionsub$Dissected_shell_dry_weight ~ regressionsub$Shell_L)) 
+#Model 5: shell dry mass        Formula y= 0.40234x -15.78220
+
+#graph estimated total dry mass
+ggplot(redabaloneperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Dry Mass (g)") + ggtitle("H. rufescens initial dry mass") + theme(plot.title =element_text(hjust = 0.5))
+
+```
+
+###Abalone Analysis
+``` {r}
+
+#remove starved treatment
+abmodels<-subset(redabaloneperformance, !diet== "starved")
+view(abmodels)
+
+#look at the data without starved treatment
+#histogram
+ggplot(abmodels, aes(x=terminal_total_dry_mass)) + geom_histogram(binwidth=01)
+#when combined, the terminal dry masses show a left leaning distribution
+ 
+
+# Build the linear model to test normality of residuals
+# The model will look at 
+model <- lm(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = abmodels)
 # Create a QQ plot of residuals
 ggqqplot(residuals(model))
-#there is a slight U shaped pattern in the data where the distribution deviates from the expected line in the upward direction on both ends and droops in the middle
+#there is a slight upward deviations from the expected line in the upward direction on both ends and droops in the middle, however, all points center around the line
+par(mfrow = c(2, 2))
+plot(model)
+#the data look fairly normalz
 
 #testing normality with a Shapiro-Wilk test
 shapiro_test(residuals(model))
-#SW test rejects the Ho(p=0.01308574), thus we accept the alternative H that the data are not normally distributed.
+#SW test fails to reject the Ho(p=0.594), the residuals are normally distributed
 
-#Since the data are not normal, we can't use a Barlette test for equal variance, instead we will use a Levene Test
-leveneTest(terminal_dry_mass~diet, data=redabaloneperformance)
-#Levene test fails to reject the null Ho (p-value = 0.07774), thus we accept the hypothesis that our variances are equal
-
-#general linear model will not work for our data if we were just looking at the impact of diet on abalone mass, however, we want to account for starting differences in weight.
-##because our initial weights were in wet mass, they will be higher in total value and introduce more variablity due to water weight, thus, we cannot use those values
-###We will account for initial weights of animals by estimating initial dry mass using shell length to predict dry mass as calculated using our intial sample's above in "initial weight estimates"
-####We calculated these numbers using a linear regression and then input the estimated initial values into the original datasheet "PerformanceAssay2020.csv"
-
-#To remind us of the question we want to ask "does diet impact abalone weight?"
-##We think that diet will cause differences in weight, however, we know that initial weight matters and individual growth rates matter.
-###But, we are not interested in how individual abalone grow relative to each other, regardless, we need to account for the variation introduced by this.
-####We also know that starting weight matters, as many animals grow more rapidly when young and asymptote as they grow, etc.
-######Thus we can account for this variation with a generalized linear model
-
-testing <- glmm(terminal_dry_mass ~ diet + (1|est_total_dry_mass_i),
-                family=gaussian (link = "identity"), data=redabaloneperformance)
-summary(testing)
-
-mixed.model<-lmer(terminal_dry_mass ~ diet + (1|est_total_dry_mass_i), data = redabaloneperformance)
-summary(mixed.model, corr=F)
-
-dotchart(sort(xtabs(~ est_total_dry_mass_i), cex=0.7))
+#Since the data are not normal, we can't use a Bartlette test for equal variance, instead we will use a Levene Test
+bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
+#Levene test fails to reject the null Ho (p-value =0.3937), thus we accept the hypothesis that our variances are equal
 
 
+#Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
+## Does diet type influence abalone weight when initial weight is taken into consideration?"
+## H0: there is no difference in abalone weights between diets
+## HA: there is a difference in abalone weights between diets
 
-
-
-
-
-
-
-
-
-ancova_model <- aov(terminal_dry_mass ~ diet*est_total_dry_mass_i, data = redabaloneperformance)
+ancova_model <- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = abmodels)
 Anova(ancova_model, type="III")
 
+#We reject the null hypothesis (p= 0.000775) and embrace the alternative, abalone weights differ between diets
+
+
+#conduct Tukeys post hoc test to see how the treatments differ
 redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet') 
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
-
-
+#all treatments differ from each other
 
 
 ```
 
 
 ## Tegula
+###Exploring Data
 ```{r}
 #subset data for tegula
 tegulaperformance<-subset(performance, grazer_spp.== "tegula")
 
 #histogram
-ggplot(tegulaperformance, aes(x=terminal_dry_mass)) + geom_histogram()
+ggplot(tegulaperformance, aes(x=terminal_dry_tissue_mass)) + geom_histogram()
+#the data look fairly normal when combined
 
-#make boxplot of percent change by diet
-ggplot(tegulaperformance, aes(x= diet , y= percent_change, fill = diet )) + theme_bw() + geom_boxplot() + ggtitle("T. funebralis percent change in total mass") + ylab("Total mass change (%)") + xlab("Diet Treatment") + guides(fill= F) + theme(plot.title =element_text(hjust = 0.5))
+##we will conduct ANOVA or GLMM if assumptions are met. Starved treatment is used as a control and to detect if any food treatment is worse than starvation (e.g., toxic and harmful algae), thus, starved treatments will not be used unless a food treatment causes more mass loss than starved. 
+
+#explore the data 
+
+#make boxplot for initial wet mass
+ggplot(tegulaperformance, aes(x=diet, y=wetmass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Wet Mass (g)") + ggtitle("T. funebralis initial wet mass") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final wet mass
+ggplot(tegulaperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Wet Mass (g)") + ggtitle("T. funebralisfinal wet mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot for mass difference
+ggplot(tegulaperformance, aes(x=diet, y=wetmass_total_Wd , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis change in wet Mass (g)") + ggtitle("T. funebralis mass change by diet") + theme(plot.title =element_text(hjust = 0.5))
+#aside from the variabilty in weights due to water, starved treatment has a mean below zero while others are above 
+
+
+#look at DRY mass based on tissue type
+
+#make boxplot of final dry mass
+ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_tissue_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Dry Mass (g)") + ggtitle("T. funebralis final dry tissue by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+#make boxplot of final shell dry mass by diet
+ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("T. funebralis shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+```
+
+###Estimating Initial Masses
+```{r}
+#test if there is a significant difference in initial wet masses using a simple anova
+initialmassteg<-aov(tegulaperformance$wetmass_i ~ tegulaperformance$diet)
+summary(initialmassteg)
+#we fail to reject the null hypothesis (p = 0.687), the treatments are not different
+
+##To reduce variance due to water weight, we estimated initial DRY masses through regression analysis using shell lengths to predict dry weight using a sub-sample of the population before the experiment
+
+#read and rename file
+regressions <- read.csv("regressiondata.csv",header=T)
+View(regressions)
+
+#subset abalone
+tegregressions<-subset(regressions, Species == "Teg")
+view(tegregressions)
+
+#explore data
+mean(tegregressions$Dissected_total_dry_weight)
+sd(tegregressions$Dissected_total_dry_weight)
+hist(tegregressions$Dissected_total_dry_weight)
+mean(tegregressions$Real_L)
+sd(tegregressions$Real_L)
+hist(tegregressions$Real_L)
+
+#simple scatterplot and pearson correlation
+plot(tegregressions$Dissected_total_dry_weight, tegregressions$Real_L, data = tegregressions, main = "scatterplot")
+cor(tegregressions$Dissected_total_dry_weight, tegregressions$Real_L)
+
+#Tegula Model
+
+
+#Teg Model 1 total dry tissue
+tegmod1<-lm(Dissected_total_dry_weight ~ Real_L, data = tegregressions)
+summary(tegmod1)
+attributes(tegmod1)
+
+#add the line
+tegplot1<- plot(tegregressions$Real_L, tegregressions$Dissected_total_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Tegula Whole Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(tegregressions$Dissected_total_dry_weight ~ tegregressions$Real_L)) 
+
+#Teg Model 1: total dry tissue    Y=  0.12235x -0.60049
+
+#Teg Model 2 soft dry tissue
+tegmod2<-lm(Dissected_tissue_dry_weight ~ Real_L, data = tegregressions)
+summary(tegmod2)
+attributes(tegmod2)
+
+#add the line
+tegplot2<- plot(tegregressions$Real_L, tegregressions$Dissected_tissue_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Tegula Soft Tissue",
+     pch = 19, frame = FALSE) +
+abline(lm(tegregressions$Dissected_tissue_dry_weight ~ tegregressions$Real_L)) 
+
+#Model 2: soft tissue dry tissue    Y=  0.004463x -0.014478
+
+#Model 3 dry shell
+tegmod3<-lm(Dissected_shell_dry_weight ~ Real_L, data = tegregressions)
+summary(tegmod3)
+attributes(tegmod3)
+
+#add the line
+tegplot3<- plot(tegregressions$Real_L, tegregressions$Dissected_shell_dry_weight, main = "regression",
+     xlab = "Shell Length", ylab = "Tegula Shell ",
+     pch = 19, frame = FALSE) +
+abline(lm(tegregressions$Dissected_shell_dry_weight ~ tegregressions$Real_L)) 
+
+#Teg Model 3: total dry tissue    Y=  0.117889x -0.586016
+
+#graph estimated total dry mass
+ggplot(tegulaperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Dry Mass (g)") + ggtitle("T.funebralis initial dry mass") + theme(plot.title =element_text(hjust = 0.5))
+
+
+view(tegulaperformance)
+```
+
+```{r}
+
+
 
 
 #make boxplot of final tissue dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_tissue_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 
 #make boxplot of final shell dry mass by diet
@@ -604,28 +801,6 @@ abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L))
 ```
 
 
-## Tegula Models
-```{r }
-#Tegula Model
-
-#explore data
-mean(regressiontegsub$Dissected_sum_drytissue)
-sd(regressiontegsub$Dissected_sum_drytissue)
-hist(regressiontegsub$Dissected_sum_drytissue)
-
-#model4 dry tegula tissue
-mod4<-lm(Dissected_sum_drytissue ~ Real_L, data = regressiontegsub)
-summary(mod4)
-attributes(mod4)
-
-#add the line
-abregplot4<- plot(regressiontegsub$Real_L, regressiontegsub$Dissected_sum_drytissue, main = "regression",
-     xlab = "Shell Length", ylab = "Tegula Whole Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressiontegsub$Dissected_sum_drytissue ~ regressiontegsub$Real_L)) 
-
- 
-```
 
 #Figures for Manuscript
 ```{r}
@@ -651,7 +826,7 @@ view(choice)
 #performance
 #this figure only shows final dry mass of non-shell tissue for tegula and red abalone. All other tissue will be in the appendix
 
-fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_mass, fill= diet)) + 
+fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_tissue_mass, fill= diet)) + 
   geom_boxplot(show.legend = FALSE) + theme_bw() + 
   xlab("Diet") + 
   ylab("Dry Tissue Mass (g)") + 
@@ -685,31 +860,31 @@ performance2 <- subset(performance, diet != "starved" ) #filter out the starved 
 view(performance2)
 
 #check normality
-qqnorm(performance2$terminal_dry_mass)
-plot(performance2$terminal_dry_mass)
+qqnorm(performance2$terminal_dry_tissue_mass)
+plot(performance2$terminal_dry_tissue_mass)
 
 #look at them individually
 redabs<-subset(performance2, grazer_spp.== "red abalone")
-hist(redabs$terminal_dry_mass)
+hist(redabs$terminal_dry_tissue_mass)
 tegs<-subset(performance2, grazer_spp.== "tegula")
-hist(tegs$terminal_dry_mass)
+hist(tegs$terminal_dry_tissue_mass)
 
 
 #create simple model 
-m <- lm(terminal_dry_mass ~ diet, performance2)
+m <- lm(terminal_dry_tissue_mass ~ diet, performance2)
 summary(m)
 par(mfrow = c(2, 2))
 plot(m)
 anova(m)
 
-m2<-lm(terminal_dry_mass ~ diet*grazer_spp., performance2)
+m2<-lm(terminal_dry_tissue_mass ~ diet*grazer_spp., performance2)
 summary(m2)
 par(mfrow = c(2, 2))
 plot(m2)
 anova(m2)
 
 
-m3<-glmer(terminal_dry_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i) , family = gaussian, performance2)
+m3<-glmer(terminal_dry_tissue_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i) , family = gaussian, performance2)
 summary(m3)
 par(mfrow = c(2, 2))
 plot(m3)
@@ -737,7 +912,7 @@ print(hsd)
 plot(hsd)
 
 #does differnt diet affect weight of grazers
-m3<- glmer(terminal_dry_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i), data = performance2, family = binomial)
+m3<- glmer(terminal_dry_tissue_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i), data = performance2, family = binomial)
 
 anova(m3)
 
@@ -751,7 +926,7 @@ anova(m3)
 
 
 
-model2<- aov(terminal_dry_mass ~ diet + est_total_dry_mass_i, data = tegs)
+model2<- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = tegs)
 Anova(model2,type="III")
 
 hsd2 <- HSD.test(model2, trt = 'diet') 
@@ -759,7 +934,7 @@ print(hsd2)
 plot(hsd2)
 
 
-test<- aov(terminal_dry_mass ~ diet, data = redabs)
+test<- aov(terminal_dry_tissue_mass ~ diet, data = redabs)
 Anova(test)
 
 hsd1 <- HSD.test(test, trt = 'diet') 
@@ -770,7 +945,7 @@ plot(hsd1)
 
 
 
-model1<- aov(terminal_dry_mass ~ diet + est_total_dry_mass_i, data = redabs)
+model1<- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = redabs)
 Anova(model1,type="III")
 
 hsd <- HSD.test(model1, trt = 'diet') 
@@ -778,7 +953,7 @@ print(hsd)
 plot(hsd)
 
 
-test<- aov(terminal_dry_mass ~ diet, data = redabs)
+test<- aov(terminal_dry_tissue_mass ~ diet, data = redabs)
 Anova(test)
 
 hsd1 <- HSD.test(test, trt = 'diet') 
