@@ -181,8 +181,8 @@ qqline(tegulachoicesarg$algae_Wd)
 
 #our data fail the normality assumption for a T-test
 ##our data are not independent since they are a choice between two options of algae
-### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consuption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "t"otal consumed" between S. horneri and M. pyrifera.
-####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. Thus, the original data are not used, rather the mean, variance, and standard ddviation are baed on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
+### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consumption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "total consumed" between S. horneri and M. pyrifera.
+####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. Thus, the original data are not used, rather the mean, variance, and standard deviation are based on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
 
 #check for normality
 ggplot(tegulachoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
@@ -518,7 +518,7 @@ ggqqplot(residuals(model))
 #there is a slight upward deviations from the expected line in the upward direction on both ends and droops in the middle, however, all points center around the line
 par(mfrow = c(2, 2))
 plot(model)
-#the data look fairly normalz
+#the data look fairly normal
 
 #testing normality with a Shapiro-Wilk test
 shapiro_test(residuals(model))
@@ -534,7 +534,8 @@ bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
 ## H0: there is no difference in abalone weights between diets
 ## HA: there is a difference in abalone weights between diets
 
-ancova_model <- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = abmodels)
+ancova_model <- lm(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = abmodels)
+ancova_model$coeff
 Anova(ancova_model, type="III")
 
 #We reject the null hypothesis (p= 0.000775) and embrace the alternative, abalone weights differ between diets
@@ -545,6 +546,9 @@ redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet')
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
+
+par(mfrow = c(2,2))
+plot(ancova_model)
 
 
 ```
@@ -615,7 +619,6 @@ cor(tegregressions$Dissected_total_dry_weight, tegregressions$Real_L)
 
 #Tegula Model
 
-
 #Teg Model 1 total dry tissue
 tegmod1<-lm(Dissected_total_dry_weight ~ Real_L, data = tegregressions)
 summary(tegmod1)
@@ -658,46 +661,45 @@ abline(lm(tegregressions$Dissected_shell_dry_weight ~ tegregressions$Real_L))
 #graph estimated total dry mass
 ggplot(tegulaperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Dry Mass (g)") + ggtitle("T.funebralis initial dry mass") + theme(plot.title =element_text(hjust = 0.5))
 
-
-view(tegulaperformance)
 ```
 
+###Tegula Analysis
 ```{r}
 
 
+#remove starved treatment
+tegmodels<-subset(tegulaperformance, !diet== "starved")
+view(tegmodels)
 
+#look at the data without starved treatment
+#histogram
+ggplot(tegmodels, aes(x=terminal_total_dry_mass)) + geom_histogram(binwidth=0.01)
+#when combined, the terminal dry masses show a left leaning distribution
+ 
 
-#make boxplot of final tissue dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_tissue_mass, fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Tissue Dry Mass (g)") + ggtitle("Tegula final dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+# Build the linear model to test normality of residuals
+# The model will look at 
+Tegmodel <- lm(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = tegmodels)
+# Create a QQ plot of residuals
+ggqqplot(residuals(Tegmodel))
+#the data look normal but deviate toward the right end of the QQ plot. May need to address outliers
 
+par(mfrow = c(2, 2))
+plot(Tegmodel)
+#the data look fairly normalz
 
-#make boxplot of final shell dry mass by diet
-ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= treatment)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("Tegula final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+#Since the data are not normal, we can't use a Bartlette test for equal variance, instead we will use a Levene Test
+bartlett.test(terminal_total_dry_mass ~ diet , data=tegmodels)
+#Levene test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
 
+#run anova with covariate
+Anova(Tegmodel, type = "III")
 
-#run analysis of variance using aov function
-tegaov<- aov(tegulaperformance$percent_change ~ tegulaperformance$diet)
-#view aov stats
-summary(tegaov)
-
-#check assumptions of ANOVA
-# check Levene's test for constant variance
-leveneTest(tegaov)
-## null hypothesis is that we have constant variance
-### P=0.55, do not reject the hypothesis
-
-#check the normality of the residuals
-qqnorm(tegaov$residuals)
-shapiro.test(tegaov$residuals)
-##resuduals are normally distributed
-
-#Tukeys post hoc test
-teg.aov.HSD <- HSD.test(tegaov, trt = 'tegulaperformance$diet') 
-print(teg.aov.HSD)
-plot(teg.aov.HSD)
-
-
-
+#conduct Tukeys post hoc test to see how the treatments differ
+teg.aov.HSD1 <- HSD.test(Tegmodel, trt = 'diet') 
+print(teg.aov.HSD1)
+plot(teg.aov.HSD1)
+#all treatments differ from each other
 ```
 
 
@@ -718,89 +720,42 @@ na.omit(gathered_obs)
 is.factor(gathered_obs$righting)
 as.factor(gathered_obs$righting)
 
-#make boxplot
-ggplot(gathered_obs, aes(x= diet , y= time, fill = righting )) + theme_bw() + geom_boxplot()
+#make bargraph
+ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Time (sec)") + ggtitle("Righting Time Before and After Diet Treatment") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
+  scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera","mixed" = "Mixed","sargassum" = "S. horneri")) +
+   geom_vline(xintercept=c(1.5),linetype="dotted") +
+  scale_fill_manual("",  values = c("righting_time_1" = "#1260AB", "righting_time_2" = "#009BFF"), labels=c("righting_time_1" = "Initial", "righting_time_2" = "Final")) 
+#Overall, initial righting time was higher for starved treatment individuals followed by M. pyrifera, Mixed and S. horneri
+##Final righting time increased for starved individuals, mixed, and S. horneri but decreased for M. pyrifera. 
 
 
-ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) +
-  geom_bar(stat="identity",position=position_dodge())+theme_minimal()
-
-```
-#Initial weight estimates
-```{r }
-#read and rename file
-regressions <- read.csv("regressiondata.csv",header=T)
-View(regressions)
-
-#subset abalone
-regressionsub<-subset(regressions, Species == "Ab")
-
-#subset tegula
-regressiontegsub<-subset(regressions, Species == "Teg")
-view(regressiontegsub)
 
 ```
 
-## Abalone Models
-```{r }
+#Wrack Dependent Community Assay
+```{r}
+community<-read.csv("Comm grazer exp.csv", header = T)
+view(community )
 
 #explore data
-mean(regressionsub$Dissected_sum_drytissue)
-sd(regressionsub$Dissected_sum_drytissue)
-hist(regressionsub$Dissected_sum_drytissue)
-mean(regressionsub$Shell_L)
-sd(regressionsub$Shell_L)
-hist(regressionsub$Shell_L)
 
-#simple scatterplot and pearson correlation
-plot(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L, data = regressionsub, main = "scatterplot")
-cor(regressionsub$Dissected_sum_drytissue, regressionsub$Shell_L)
+#lets look at TOTAL consumption to see how that differs between treatments
+ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("Total Algae Consumed") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
+#Overall, the combined consumption of native benthic seaweeds + wrack appears to be lower in the S. horneri treatment
 
 
-#Abalone models 
-#model 1
-#regression to predict dry tissue
-mod<-lm(Dissected_sum_drytissue ~ Shell_L, data = regressionsub)
-summary(mod)
-attributes(mod)
+#lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
+ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Native Benthic Seaweed Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
+#The  total biomass of native benthic seaweeds consumed appears to be higher in S. horneri treatment. Suggesting that consumption may have shifted onto NBS when S. horneri was introduced.
 
-#add the line
-abregplot<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Total Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
+#Now lets look at how consumption of just the WRACK species differs by Treatment
+ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Wrack Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
+#consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
 
-#model 2
 
-#regression to predict body dry tissue
-mod2<-lm(Dissected_ab_nongonad_dry_weight ~ Shell_L, data = regressionsub)
-summary(mod2)
-attributes(mod2)
-
-#add the line
-abregplot2<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_nongonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Foot Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_nongonad_dry_weight ~ regressionsub$Shell_L)) 
-
-
-#Model3
-
-#regression to predict gill/gut/gonad tissue
-mod3<-lm(Dissected_ab_gonad_dry_weight ~ Shell_L, data = regressionsub)
-summary(mod3)
-attributes(mod3)
-
-#add the line
-abregplot3<- plot(regressionsub$Shell_L, regressionsub$Dissected_ab_gonad_dry_weight, main = "regression",
-     xlab = "Shell Length", ylab = "Gill/gut/gonad complex Dry Tissue",
-     pch = 19, frame = FALSE) +
-abline(lm(regressionsub$Dissected_ab_gonad_dry_weight ~ regressionsub$Shell_L)) 
 
 ```
-
-
 
 #Figures for Manuscript
 ```{r}
@@ -842,121 +797,3 @@ fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_tissue_mass, fill= diet))
 fig2
 ```
 
-
-#Analysis for manuscript 1
-
-```{r}
-
-#load data
-performanceassay<-read.csv("PerformanceAssays2020.csv", header=TRUE,)
-view(performanceassay)
-na.omit(performanceassay)
-
-#R decided to add phantom rows of NA at the bottom. Subset the dataframe to only keep the rows with actual information
-performance <- performanceassay[1:160,]
-
-#performance assay
-performance2 <- subset(performance, diet != "starved" ) #filter out the starved treatment for the model
-view(performance2)
-
-#check normality
-qqnorm(performance2$terminal_dry_tissue_mass)
-plot(performance2$terminal_dry_tissue_mass)
-
-#look at them individually
-redabs<-subset(performance2, grazer_spp.== "red abalone")
-hist(redabs$terminal_dry_tissue_mass)
-tegs<-subset(performance2, grazer_spp.== "tegula")
-hist(tegs$terminal_dry_tissue_mass)
-
-
-#create simple model 
-m <- lm(terminal_dry_tissue_mass ~ diet, performance2)
-summary(m)
-par(mfrow = c(2, 2))
-plot(m)
-anova(m)
-
-m2<-lm(terminal_dry_tissue_mass ~ diet*grazer_spp., performance2)
-summary(m2)
-par(mfrow = c(2, 2))
-plot(m2)
-anova(m2)
-
-
-m3<-glmer(terminal_dry_tissue_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i) , family = gaussian, performance2)
-summary(m3)
-par(mfrow = c(2, 2))
-plot(m3)
-anova(m3)
-
-#Tukeys post hoc test
-hsd <- HSD.test(m3, trt = 'diet') 
-print(m3)
-plot(m3)
-
-#check assumptions of ANOVA
-# check Levene's test for constant variance
-leveneTest(m)
-## null hypothesis is that we have constant variance
-### P=0.43, do not reject the hypothesis
-
-#check the normality of the residuals
-qqnorm(m$residuals)
-shapiro.test(m$residuals)
-##resuduals are normally distributed
-
-#Tukeys post hoc test
-hsd <- HSD.test(m2, trt = 'diet') 
-print(hsd)
-plot(hsd)
-
-#does differnt diet affect weight of grazers
-m3<- glmer(terminal_dry_tissue_mass ~ diet*grazer_spp. + (1| est_total_dry_mass_i), data = performance2, family = binomial)
-
-anova(m3)
-
-
-
-
-
-
-
-
-
-
-
-model2<- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = tegs)
-Anova(model2,type="III")
-
-hsd2 <- HSD.test(model2, trt = 'diet') 
-print(hsd2)
-plot(hsd2)
-
-
-test<- aov(terminal_dry_tissue_mass ~ diet, data = redabs)
-Anova(test)
-
-hsd1 <- HSD.test(test, trt = 'diet') 
-print(hsd1)
-plot(hsd1)
-
-
-
-
-
-model1<- aov(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = redabs)
-Anova(model1,type="III")
-
-hsd <- HSD.test(model1, trt = 'diet') 
-print(hsd)
-plot(hsd)
-
-
-test<- aov(terminal_dry_tissue_mass ~ diet, data = redabs)
-Anova(test)
-
-hsd1 <- HSD.test(test, trt = 'diet') 
-print(hsd1)
-plot(hsd1)
-```
