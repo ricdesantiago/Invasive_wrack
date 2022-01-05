@@ -158,7 +158,7 @@ view(tegulachoice)
 
 #look at the data in boxplots to visualize the spread around the median
 ggplot(tegulachoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
-#there seems to be an outlier in each treatment that may be pulling distributions, however, we are leaving outliers in as they are biological real, some animals may simply eat more than others.
+#there seems to be an outlier in each treatment that may be pulling distributions, however, we are leaving outliers in as they are biological real.
 
 #separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
 #sargassum
@@ -172,19 +172,20 @@ ggplot(tegulachoicemacro, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
 mean(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
 sd(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
 
-#the data do not look normal for the samples, Ds of weight in sargassum tend to be right leaning while macro samples tend to be left learning
+#Ds of weight in S. horneri tend to be right leaning while M. pyrifera samples tend to be left learning
 #test for normality
 par(mfrow=c(2,2))
 qqnorm(tegulachoicemacro$algae_Wd)
 qqline(tegulachoicemacro$algae_Wd)
 qqnorm(tegulachoicesarg$algae_Wd)
 qqline(tegulachoicesarg$algae_Wd)
+# when graphing the sample quantities versues theoretical, we can see that the data tend to center around the fitted line. We can proceed.
 
-#our data fail the normality assumption for a T-test
-##our data are not independent since they are a choice between two options of algae within each replicate
+##however, our data are not independent since they are a choice between two options of algae within each replicate
 ### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consumption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "total consumed" between S. horneri and M. pyrifera.
-####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. Thus, the original data are not used, rather the mean, variance, and standard deviation are based on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
+####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. The original data are not used, rather the mean, variance, and standard deviation are based on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
 
+####make the data in "wide form" to create column to display differences#####
 #create a dataframe with just important columns
 tegdiffs <- na.omit(tegulachoice[, -c(1:8, 10:12, 14:22)])
 view(tegdiffs)
@@ -201,20 +202,22 @@ view(tegdiffs4)
 tegdiffs5<- mutate(tegdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
 view(tegdiffs5)
 
-
-#check for normality
+#check for normality of the differences
 ggplot(tegdiffs5, aes(x=diffs)) + geom_histogram(binwidth=0.1)
 qqnorm(tegdiffs5$diffs)
 qqline(tegdiffs5$diffs)
-#there seems to be an outlier, however, the data look normally distributed around the theoretical line
+#there seems to be an outlier, however, the data look normally distributed around the theoretical line. We can proceed to a paired T test
+```
 
+###Analysis
+```{r}
 #we will conduct a paired-T test.
 
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
 #T test
-t.test(tegulachoice$algae_Wd~tegulachoice$algae_spp., paired= TRUE)
+t.test(tegulachoice$algae_Wd~tegulachoice$algae_spp., mu=0, alt="two.sided", paired=T,conf.level=0.95)
 ## we reject the null hypothesis (t = 5.7152, df = 13, p-value = 7.111e-05), there was a choice made between algae
 
 
@@ -244,8 +247,6 @@ view(pachychoice)
 ggplot(pachychoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 #there seems to be an outlier in the S. horneri treatment that may be pulling the distribution
 
-##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
-
 #check for normality
 ggplot(pachychoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
 qqnorm(pachychoice$algae_Wd)
@@ -253,11 +254,19 @@ qqline(pachychoice$algae_Wd)
 #there seems to be an outlier, however, the data look normally distributed around the theoretical line
 
 #we will conduct a paired-T test.
+
+
+```
+
+###Analysis
+```{r}
+
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
+
 #T test
-t.test(pachychoice$algae_Wd~pachychoice$algae_spp., paired= TRUE)
+t.test(pachychoice$algae_Wd~pachychoice$algae_spp., mu=0, alt="two.sided", paired=T,conf.level=0.95)
 ## we fail reject the null hypothesis (t = 0.073928, df = 13, p-value = 0.9422), there was no choice made between algae
 
 
@@ -283,7 +292,6 @@ view(paguruschoice)
 #look at the data in boxplots to visualize the spread around the median
 ggplot(paguruschoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 
-##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
 
 #check for normality
 ggplot(paguruschoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
@@ -322,20 +330,24 @@ view(abalonechoice)
 #look at the data in boxplots to visualize the spread around the median
 ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 
-##due to failed assumptions for T-sample t test (See lines 180+), we will test the nomrality by looking at the distribution of the differences and conduct a Paired T test
 
 #check for normality
 ggplot(abalonechoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.5)
 qqnorm(abalonechoice$algae_Wd)
 qqline(abalonechoice$algae_Wd)
-#the data seem pretty normal
+#the data seem normal
 
 #we will conduct a paired-T test.
+```
+
+###Analysis
+```{r}
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
+
 #T test
-t.test(abalonechoice$algae_Wd~abalonechoice$algae_spp., paired= TRUE)
+t.test(abalonechoice$algae_Wd~abalonechoice$algae_spp., mu=0, alt="two.sided", paired=T,conf.level=0.95)
 ## we reject the null hypothesis (4.5053, df = 15, p-value = 0.0004189), there was a choice made between algae
 
 
@@ -345,7 +357,6 @@ ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_box
 #When given a choice between S. horneri and M. pyrifera, H. cracherodii showed a preference for M. pyriferae.
 
 ```
-
 
 
 #Performance Assays March-April 2020
@@ -364,6 +375,8 @@ performance$treatment<-as.factor(performance$treatment)
 #create new column to look at weight difference (Wf-Wi) as a percent of initial weight (Wd/Wi *100) to visualize rough weight differences
 performance<-mutate(performance, percent_change = performance$wetmass_total_Wd / performance$wetmass_i* 100)
 view(performance)
+
+ggplot(performance, aes(y=percent_change, x=diet)) + geom_boxplot()
 
 ```
 
@@ -543,19 +556,22 @@ plot(model)
 shapiro_test(residuals(model))
 #SW test fails to reject the Ho(p=0.594), the residuals are normally distributed
 
-#Since the data are not normal, we can't use a Bartlette test for equal variance, instead we will use a Levene Test
 bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
-#Levene test fails to reject the null Ho (p-value =0.3937), thus we accept the hypothesis that our variances are equal
+#Bartlett test fails to reject the null Ho (p-value =0.3937), thus we accept the hypothesis that our variances are equal
 
 
 #Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
 ## Does diet type influence abalone weight when initial weight is taken into consideration?"
-## H0: there is no difference in abalone weights between diets
-## HA: there is a difference in abalone weights between diets
+## H0: There is no relationship between diet and abalone weights
+## HA: There is a relationship between diet and abalone weights
 
 ancova_model <- lm(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = abmodels)
 ancova_model$coeff
 Anova(ancova_model, type="III")
+
+
+par(mfrow = c(2,2))
+plot(ancova_model)
 
 #We reject the null hypothesis (p= 0.000775) and embrace the alternative, abalone weights differ between diets
 
@@ -565,9 +581,6 @@ redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet')
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
-
-par(mfrow = c(2,2))
-plot(ancova_model)
 
 
 ```
@@ -661,7 +674,7 @@ tegplot2<- plot(tegregressions$Real_L, tegregressions$Dissected_tissue_dry_weigh
      xlab = "Shell Length", ylab = "Tegula Soft Tissue",
      pch = 19, frame = FALSE) +
 abline(lm(tegregressions$Dissected_tissue_dry_weight ~ tegregressions$Real_L)) 
-
+tegplot2
 #Model 2: soft tissue dry tissue    Y=  0.004463x -0.014478
 
 #Model 3 dry shell
@@ -711,16 +724,19 @@ plot(Tegmodel)
 bartlett.test(terminal_total_dry_mass ~ diet , data=tegmodels)
 #Levene test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
 
+
 #run anova with covariate
+## H0: There is no relationship between diet and tegula weights
+## HA: There is a relationship between diet and tegula weights
+
 Anova(Tegmodel, type = "III")
 
 #conduct Tukeys post hoc test to see how the treatments differ
 teg.aov.HSD1 <- HSD.test(Tegmodel, trt = 'diet') 
 print(teg.aov.HSD1)
 plot(teg.aov.HSD1)
-#all treatments differ from each other
+#S.horneri and mixed diets are not different from each other, M.pyrifera resulted ina  lower mean
 ```
-
 
 
 ##Righting times
@@ -737,7 +753,7 @@ gathered_obs<-gather(abperf, key="righting", value="time", 24:25)
 view(gathered_obs)
 na.omit(gathered_obs)
 is.factor(gathered_obs$righting)
-as.factor(gathered_obs$righting)
+gathered_obs$righting<-as.factor(gathered_obs$righting)
 
 #make bargraph
 ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Time (sec)") + ggtitle("Righting Time Before and After Diet Treatment") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
@@ -799,6 +815,11 @@ ggplot(commMP, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.
 qqnorm(commSH$Total_Benthic_Algae_Consumed)
 qqline(commSH$Total_Benthic_Algae_Consumed)
 
+#T test
+t.test(community$Total_Benthic_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+
+t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+
 
 ```
 
@@ -806,12 +827,6 @@ qqline(commSH$Total_Benthic_Algae_Consumed)
 #Figures for Manuscript
 ```{r}
 #choice
-par(mfrow=c(2,2))
-abplot
-tegplot
-pachyplot
-pagurusplot
-
 LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T)
 View(LabAssayWholeTissue)
 choice <- LabAssayWholeTissue[1:232,]
@@ -822,7 +837,7 @@ fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_
 
 fig1
 
-view(choice)
+
 
 #performance
 #this figure only shows final dry mass of non-shell tissue for tegula and red abalone. All other tissue will be in the appendix
