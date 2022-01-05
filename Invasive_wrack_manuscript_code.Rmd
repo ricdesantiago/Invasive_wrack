@@ -68,6 +68,7 @@ Grazer_Survey_Data_edited <- Grazer_Survey_Data
 Grazer_Survey_Data_edited<- mutate(Grazer_Survey_Data_edited, Grazer_sum = on_wrack + off_wrack) 
 filter(Grazer_Survey_Data_edited, Grazer_sum != 0)
 #this removed 13 observations
+view(Grazer_Survey_Data_edited)
 
 #create a dataframe with just important columns
 Grazer_Survey_Data_reduced <- na.omit(Grazer_Survey_Data_edited[, -c(1:3, 5, 7)])
@@ -180,17 +181,35 @@ qqnorm(tegulachoicesarg$algae_Wd)
 qqline(tegulachoicesarg$algae_Wd)
 
 #our data fail the normality assumption for a T-test
-##our data are not independent since they are a choice between two options of algae
+##our data are not independent since they are a choice between two options of algae within each replicate
 ### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consumption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "total consumed" between S. horneri and M. pyrifera.
 ####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. Thus, the original data are not used, rather the mean, variance, and standard deviation are based on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
 
+#create a dataframe with just important columns
+tegdiffs <- na.omit(tegulachoice[, -c(1:8, 10:12, 14:22)])
+view(tegdiffs)
+#subset S.horneri only
+tegdiffs2<-subset(tegdiffs, algae_spp. == "sargassum")
+view(tegdiffs2)
+#subset M. pyrifera only
+tegdiffs3<-subset(tegdiffs, algae_spp. == "macro")
+view(tegdiffs3)
+#Bind the two datasets in "wide form"
+tegdiffs4<- bind_cols(tegdiffs2,tegdiffs3)
+view(tegdiffs4)
+#create new column with the differences by subtracting S. horneri consumed from M. pyrifera consumed
+tegdiffs5<- mutate(tegdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
+view(tegdiffs5)
+
+
 #check for normality
-ggplot(tegulachoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
-qqnorm(tegulachoice$algae_Wd)
-qqline(tegulachoice$algae_Wd)
+ggplot(tegdiffs5, aes(x=diffs)) + geom_histogram(binwidth=0.1)
+qqnorm(tegdiffs5$diffs)
+qqline(tegdiffs5$diffs)
 #there seems to be an outlier, however, the data look normally distributed around the theoretical line
 
 #we will conduct a paired-T test.
+
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 
@@ -728,17 +747,16 @@ ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Tim
 #Overall, initial righting time was higher for starved treatment individuals followed by M. pyrifera, Mixed and S. horneri
 ##Final righting time increased for starved individuals, mixed, and S. horneri but decreased for M. pyrifera. 
 
-
-
 ```
 
 #Wrack Dependent Community Assay
 ```{r}
 community<-read.csv("Comm grazer exp.csv", header = T)
 view(community )
+```
 
-#explore data
-
+##Exploring Data
+```{r}
 #lets look at TOTAL consumption to see how that differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("Total Algae Consumed") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #Overall, the combined consumption of native benthic seaweeds + wrack appears to be lower in the S. horneri treatment
@@ -753,9 +771,37 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + th
 #consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
 
+#We can compare the means of total native benthic algae using a T test to determine if there is a statistical difference
 
 
 ```
+
+##Community Assay Analysis
+```{r}
+#lets check the normality of the data for a T test
+ggplot(community, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.5)
+
+#for S.horneri treatment
+commSH<- subset(community, Wrack_treatment == "S")
+view(commSH)
+ggplot(commSH, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+
+#difficult to visualize normally with low replication 
+qqnorm(commSH$Total_Benthic_Algae_Consumed)
+qqline(commSH$Total_Benthic_Algae_Consumed)
+
+#for M. pyrifera treatment
+commMP<- subset(community, Wrack_treatment == "M")
+view(commMP)
+ggplot(commMP, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+
+
+qqnorm(commSH$Total_Benthic_Algae_Consumed)
+qqline(commSH$Total_Benthic_Algae_Consumed)
+
+
+```
+
 
 #Figures for Manuscript
 ```{r}
