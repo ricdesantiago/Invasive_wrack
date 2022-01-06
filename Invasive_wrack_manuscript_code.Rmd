@@ -372,11 +372,11 @@ is.factor(performance$treatment)
 performance$treatment<-as.factor(performance$treatment)
 
 
-#create new column to look at weight difference (Wf-Wi) as a percent of initial weight (Wd/Wi *100) to visualize rough weight differences
-performance<-mutate(performance, percent_change = performance$wetmass_total_Wd / performance$wetmass_i* 100)
+#create new column to look at dry weight difference (Wf-Wi) as a proportion of initial weight (Wd/Wi *100) to visualize weight differences from begining to end using estimated starting weights (see section "estimated intial masses")
+performance<-mutate(performance, dry_mass_percent_change = ((terminal_total_dry_mass - est_total_dry_mass_i)/ est_total_dry_mass_i)* 100)
 view(performance)
 
-ggplot(performance, aes(y=percent_change, x=diet)) + geom_boxplot()
+ggplot(performance, aes(y=dry_mass_percent_change, x=diet)) + geom_boxplot()
 
 ```
 
@@ -408,7 +408,6 @@ ggplot(redabaloneperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxp
 ggplot(redabaloneperformance, aes(x=diet, y=wetmass_total_Wd , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("H. rufescens change in wet Mass (g)") + ggtitle("H. rufescens mass change by diet") + theme(plot.title =element_text(hjust = 0.5))
 #aside from the variabilty in weights due to water, starved treatment has a mean below zero while others are above 
 
-
 #look at DRY mass based on tissue type
 
 #make boxplot of final dry mass
@@ -422,6 +421,8 @@ ggplot(redabaloneperformance, aes(x=diet, y=terminal_nongonad_dry_mass, fill= di
 
 #make boxplot of final shell dry mass by diet
 ggplot(redabaloneperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("H. rufescens final shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+
+
 ```
 
 ###Estimating Initial Masses
@@ -432,7 +433,7 @@ initialmassabs<-aov(redabaloneperformance$wetmass_i ~ redabaloneperformance$diet
 summary(initialmassabs)
 #we fail to reject the null hypothesis (p = 0.24), the treatments are not different
 
-##To reduce variance due to water weight, we estimated initial DRY masses through regression analysis using shell lengths to predict dry weight using a sub-sample of the population before the experiment
+##To reduce variability due to water weight, we estimated initial DRY masses through regression analysis using shell lengths to predict dry weight using a sub-sample of the population before the experiment
 
 #read and rename file
 regressions <- read.csv("regressiondata.csv",header=T)
@@ -527,6 +528,8 @@ abline(lm(regressionsub$Dissected_shell_dry_weight ~ regressionsub$Shell_L))
 #graph estimated total dry mass
 ggplot(redabaloneperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Dry Mass (g)") + ggtitle("H. rufescens initial dry mass") + theme(plot.title =element_text(hjust = 0.5))
 
+
+
 ```
 
 ###Abalone Analysis
@@ -541,19 +544,20 @@ view(abmodels)
 ggplot(abmodels, aes(x=terminal_total_dry_mass)) + geom_histogram(binwidth=01)
 #when combined, the terminal dry masses show a left leaning distribution
  
+#before proceeding check that there is no correlation between estimated initial dry weights and proportional change
+reg<- plot(abmodels$est_total_dry_mass_i,abmodels$dry_mass_percent_change, frame = FALSE) +
+abline(lm(abmodels$dry_mass_percent_change ~ abmodels$est_total_dry_mass_i)) 
 
-# Build the linear model to test normality of residuals
-# The model will look at 
-model <- lm(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = abmodels)
+#there seems to be a slight correlation between initial dry mass and percent change. Bigger individuals change less. Thus we will use initial weight estimates as a covariate to look at the effect of diet on size. By doing this, we account for initial weights but lose one degree of freedom
+
+abmodel <- lm(terminal_total_dry_mass ~ diet * est_total_dry_mass_i , data = abmodels)
 # Create a QQ plot of residuals
-ggqqplot(residuals(model))
-#there is a slight upward deviations from the expected line in the upward direction on both ends and droops in the middle, however, all points center around the line
 par(mfrow = c(2, 2))
-plot(model)
+plot(abmodel)
 #the data look fairly normal
 
 #testing normality with a Shapiro-Wilk test
-shapiro_test(residuals(model))
+shapiro_test(residuals(abmodel))
 #SW test fails to reject the Ho(p=0.594), the residuals are normally distributed
 
 bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
@@ -561,28 +565,33 @@ bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
 
 
 #Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
-## Does diet type influence abalone weight when initial weight is taken into consideration?"
+
+#ANCOVA
+#first we test if there is an interaction between the initial weights and the diets
+int<-ggxplot(abmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
+ 
+int +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
+#it looks like there could be an interaction when plotting, lets see if its significant
+
+abmodel <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = abmodels)
+summary(abmodel)
+#The interaction between the dependent variable and factor are not signficant(p=0.4179), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact abalone weight?"
+
 ## H0: There is no relationship between diet and abalone weights
 ## HA: There is a relationship between diet and abalone weights
+abmodel2 <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i + diet , data = abmodels)
+summary(abmodel2)
+#We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0311)
 
-ancova_model <- lm(terminal_dry_tissue_mass ~ diet + est_total_dry_mass_i, data = abmodels)
-ancova_model$coeff
-Anova(ancova_model, type="III")
-
-
+#check residuals
 par(mfrow = c(2,2))
-plot(ancova_model)
-
-#We reject the null hypothesis (p= 0.000775) and embrace the alternative, abalone weights differ between diets
-
+plot(abmodel2)
 
 #conduct Tukeys post hoc test to see how the treatments differ
-redab.aov.HSD1 <- HSD.test(ancova_model, trt = 'diet') 
+redab.aov.HSD1 <- HSD.test(abmodel2 , trt = 'diet') 
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
-
-
 ```
 
 
@@ -718,24 +727,40 @@ ggqqplot(residuals(Tegmodel))
 
 par(mfrow = c(2, 2))
 plot(Tegmodel)
-#the data look fairly normalz
+#the data look fairly normal
 
 #Since the data are not normal, we can't use a Bartlette test for equal variance, instead we will use a Levene Test
 bartlett.test(terminal_total_dry_mass ~ diet , data=tegmodels)
-#Levene test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
+#Bartlet test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
 
 
-#run anova with covariate
+#Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
+
+#ANCOVA
+#first we test if there is an interaction between the initial weights and the diets
+int2<-ggplot(tegmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
+ 
+int2 +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
+
+tegmodel <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = tegmodels)
+summary(tegmodel)
+#There is no interaction between the dependent variable and factor (p=0.5118), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact tegula weight?"
+
 ## H0: There is no relationship between diet and tegula weights
 ## HA: There is a relationship between diet and tegula weights
+tegmodel2 <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i + diet , data = tegmodels)
+summary(tegmodel2)
+#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0141)
 
-Anova(Tegmodel, type = "III")
+#check residuals
+par(mfrow = c(2,2))
+plot(tegmodel2)
 
 #conduct Tukeys post hoc test to see how the treatments differ
-teg.aov.HSD1 <- HSD.test(Tegmodel, trt = 'diet') 
-print(teg.aov.HSD1)
-plot(teg.aov.HSD1)
-#S.horneri and mixed diets are not different from each other, M.pyrifera resulted ina  lower mean
+redab.aov.HSD1 <- HSD.test(tegmodel2 , trt = 'diet') 
+print(redab.aov.HSD1)
+plot(redab.aov.HSD1)
+#all treatments differ from each other
 ```
 
 
@@ -773,10 +798,11 @@ view(community )
 
 ##Exploring Data
 ```{r}
+
+#####visualize Data######
 #lets look at TOTAL consumption to see how that differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("Total Algae Consumed") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #Overall, the combined consumption of native benthic seaweeds + wrack appears to be lower in the S. horneri treatment
-
 
 #lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Native Benthic Seaweed Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
@@ -786,15 +812,7 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + 
 ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Wrack Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
-
-#We can compare the means of total native benthic algae using a T test to determine if there is a statistical difference
-
-
-```
-
-##Community Assay Analysis
-```{r}
-#lets check the normality of the data for a T test
+#############lets check the normality of consumption of NBS Data##############
 ggplot(community, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.5)
 
 #for S.horneri treatment
@@ -805,20 +823,97 @@ ggplot(commSH, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.
 #difficult to visualize normally with low replication 
 qqnorm(commSH$Total_Benthic_Algae_Consumed)
 qqline(commSH$Total_Benthic_Algae_Consumed)
+#The data tend to deviate away from the theoretical line at both ends
+
+#lets conduct an SW test for normality
+shapiro_test(commSH$Total_Benthic_Algae_Consumed)
+#SW test fails to reject the Ho(p=0.154), the data are normally distributed
+
 
 #for M. pyrifera treatment
 commMP<- subset(community, Wrack_treatment == "M")
 view(commMP)
 ggplot(commMP, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.1)
 
+qqnorm(commMP$Total_Benthic_Algae_Consumed)
+qqline(commMP$Total_Benthic_Algae_Consumed)
+#the data tend to deviate away from the theoretical line at the top of the distribution.
 
-qqnorm(commSH$Total_Benthic_Algae_Consumed)
-qqline(commSH$Total_Benthic_Algae_Consumed)
+#lets conduct an SW test for normality
+shapiro_test(commMP$Total_Benthic_Algae_Consumed)
+#SW test fails to reject the Ho(p=0.217), the data are normally distributed
 
-#T test
-t.test(community$Total_Benthic_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
 
+
+#############lets check the normality of consumption of WRACK TREATMENT CONSUMPTION Data##############
+
+#for S.horneri treatment
+SHwrack<- subset(community, Wrack_treatment == "S")
+view(SHwrack)
+ggplot(SHwrack, aes(x=Total_Wrack_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+
+#the histogram shows a fairly normal ditribution
+qqnorm(SHwrack$Total_Wrack_Algae_Consumed)
+qqline(SHwrack$Total_Wrack_Algae_Consumed)
+#The data are distributed around the theoretical line
+
+#lets conduct an SW test for normality
+shapiro_test(SHwrack$Total_Wrack_Algae_Consumed)
+#SW test fails to reject the Ho(p=0.976), the data are normally distributed
+
+
+#for M. pyrifera treatment
+MPwrack<- subset(community, Wrack_treatment == "M")
+view(MPwrack)
+ggplot(MPwrack, aes(x=Total_Wrack_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+
+qqnorm(MPwrack$Total_Wrack_Algae_Consumed)
+qqline(MPwrack$Total_Wrack_Algae_Consumed)
+#the data tend show a bit of scatter but still tend to center around the theoretical line
+
+#lets conduct an SW test for normality
+shapiro_test(MPwrack$Total_Wrack_Algae_Consumed)
+#SW test fails to reject the Ho(p=0.944), the data are normally distributed
+
+
+#########Test for equal Variances for a 2 Sample T Test########
+
+
+#We are clear to conduct T-tests
+
+#Native Benthic Seaweeds by Wrack Treatment
+bartlett.test(Total_Benthic_Algae_Consumed ~ Wrack_treatment, data=community)
+#Bartlett test fails to reject the null Ho (p-value =0.9962), thus we accept the hypothesis that our variances are equal
+
+
+#Wrack Seaweeds by Wrack Treatment
+bartlett.test(Total_Wrack_Algae_Consumed ~ Wrack_treatment, data=community)
+#Bartlett test rejects the null Ho (p-value =0.003831), thus we accept the hypothesis that our variances are not equal. 
+##We will Perform a Welch's T test for the unequal variences
+```
+
+##Wrack vs Native Benthic  Seaweed Analyses
+```{r}
+
+#lets see if consumption between the two wrack species differed using a T-test
+#H0: There is no difference in consumption between S. horneri and M. pyrifera
+#HA: There is a difference in consumption between S. horneri and M. pyrifera
 t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+## We reject the null hypothesis (p-value = 3.457e-08) and embrace the alternative, there is a difference in consumption between S. horneri and M. pyrifera
+
+#test if there is a difference in consumption between Native Benthic Seaweeds between S. hornery and M. pyrifera treatments
+#H0: There is no difference in consumption on NBS between S and M treatments
+#HA:There is a difference in consumption on NBS between S and M treatments
+t.test(community$Total_Benthic_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+##We fail to reject the null hypotheis (p-value = 0.0697) there is no difference in consumption of NBS when pooled.
+
+##While not statistically significant (p-value = 0.0697), we can see consumption of NBS tends to be higher in the S treatment. We can look to see if that difference is driven by any one specific speces by testing the contribution of each species. To do this, we will conduct an Analysis of variance between individual NBS by wrack species
+
+NBSaov<-lm(Algae_Wd ~ Wrack_treatment, data =community)
+
+par(mfrow=c(2,2))
+ggqqplot(residuals(NBSaov))
+
 
 
 ```
