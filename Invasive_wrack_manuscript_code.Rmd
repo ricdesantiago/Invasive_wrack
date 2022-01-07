@@ -568,13 +568,13 @@ bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
 
 #ANCOVA
 #first we test if there is an interaction between the initial weights and the diets
-int<-ggxplot(abmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
+int<-ggplot(abmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
  
 int +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
 #it looks like there could be an interaction when plotting, lets see if its significant
 
-abmodel <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = abmodels)
-summary(abmodel)
+abmodel <- lm(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = abmodels)
+anova(abmodel)
 #The interaction between the dependent variable and factor are not signficant(p=0.4179), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact abalone weight?"
 
 ## H0: There is no relationship between diet and abalone weights
@@ -742,8 +742,8 @@ int2<-ggplot(tegmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)
  
 int2 +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
 
-tegmodel <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = tegmodels)
-summary(tegmodel)
+tegmodel <- lm(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = tegmodels)
+anova(tegmodel)
 #There is no interaction between the dependent variable and factor (p=0.5118), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact tegula weight?"
 
 ## H0: There is no relationship between diet and tegula weights
@@ -818,7 +818,7 @@ ggplot(community, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth
 #for S.horneri treatment
 commSH<- subset(community, Wrack_treatment == "S")
 view(commSH)
-ggplot(commSH, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+ggplot(commSH, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.5)
 
 #difficult to visualize normally with low replication 
 qqnorm(commSH$Total_Benthic_Algae_Consumed)
@@ -877,8 +877,6 @@ shapiro_test(MPwrack$Total_Wrack_Algae_Consumed)
 
 
 #########Test for equal Variances for a 2 Sample T Test########
-
-
 #We are clear to conduct T-tests
 
 #Native Benthic Seaweeds by Wrack Treatment
@@ -901,18 +899,44 @@ bartlett.test(Total_Wrack_Algae_Consumed ~ Wrack_treatment, data=community)
 t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
 ## We reject the null hypothesis (p-value = 3.457e-08) and embrace the alternative, there is a difference in consumption between S. horneri and M. pyrifera
 
-#test if there is a difference in consumption between Native Benthic Seaweeds between S. hornery and M. pyrifera treatments
-#H0: There is no difference in consumption on NBS between S and M treatments
-#HA:There is a difference in consumption on NBS between S and M treatments
-t.test(community$Total_Benthic_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
-##We fail to reject the null hypotheis (p-value = 0.0697) there is no difference in consumption of NBS when pooled.
+#we want to know if lower palatability of S. horneri causes a shift of consumption onto Native Benthic Seaweeds (NBS)
+##(NBS= Algae_Spp. - M. pyrifera and S. horneri) consumption.##
 
-##While not statistically significant (p-value = 0.0697), we can see consumption of NBS tends to be higher in the S treatment. We can look to see if that difference is driven by any one specific speces by testing the contribution of each species. To do this, we will conduct an Analysis of variance between individual NBS by wrack species
+#look at an scatterplot
+scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_Spp.)) +  geom_jitter(aes(col=Wrack_treatment)) + geom_smooth(aes(col=Algae_Spp.), method="lm", se=F)
+#In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S.
 
-NBSaov<-lm(Algae_Wd ~ Wrack_treatment, data =community)
+#We can nest NBS treatments within Wrack treatment to ask
+###########################"Does consumption of NBS species differ within Wrack treatments?##################
+#first, remove Macro and Sargassum from the population 
+commedited<-subset(community, !Algae_Spp.== "Sargassum")
+view(commedited)
+commedited2<-subset(commedited, !Algae_Spp.== "Macro")
+view(commedited2)
 
-par(mfrow=c(2,2))
-ggqqplot(residuals(NBSaov))
+#H0: Consumption is the same between Algae Species.
+#HA: Consumption is not the same between Algae Species.
+#H1: Consumption is the same between Wrack Treatments.
+#H2: Consumption is not the same between Wrack Treatments.
+NestedNBSaov<-aov(Algae_Wd ~  Algae_Spp. + Wrack_treatment + Error(Wrack_treatment:Algae_Spp.), data =commedited2)
+summary(NestedNBSaov)
+##we reject the H0  (p= 0.0127) and embrace the alternative, consumption is not the same between algae species. 
+##We fail to reject H1 (p= 0.2904), consumption is the same between wrack treatments 
+
+#we can quickly visualize that here
+#H0
+ggplot(commedited2, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
+#H1
+ggplot(commedited2, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
+
+#although we nested Algae Species within Wrack treatment and accounted for the error, all we can say is that total consumption remains the same when Wrack species are different, but we know that consumption is NOT the same within species. Thus Grazers are eating the same amount but consumption may be shifting from one species to another.
+
+#Therefore, if we want to understand how consumption changes by species, we need to consider S. horneri and M. pyrifera as "wrack" and compare all Algae species across Wrack treatment. We should can expect to see a decrease in "wrack" and an increase in "silvetia."
+
+###So
+completeaov<-lm(Algae_Wd ~ Algae_Spp. + Wrack_treatment, data =community)
+anova(completeaov)
+summary(completeaov)
 
 
 
@@ -931,8 +955,6 @@ fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_
   facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", "Tegula" = "T. funebralis", "Pachy" = "P. crassipes", "Pagurus" = "P. samuelis")),)
 
 fig1
-
-
 
 #performance
 #this figure only shows final dry mass of non-shell tissue for tegula and red abalone. All other tissue will be in the appendix
