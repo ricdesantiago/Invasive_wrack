@@ -903,40 +903,35 @@ t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.
 ##(NBS= Algae_Spp. - M. pyrifera and S. horneri) consumption.##
 
 #look at an scatterplot
-scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_Spp.)) +  geom_jitter(aes(col=Wrack_treatment)) + geom_smooth(aes(col=Algae_Spp.), method="lm", se=F)
-#In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S.
+scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_trt)) +  geom_jitter(aes(col=Wrack_treatment)) + geom_smooth(aes(col=Algae_Spp.), method="lm", se=F)
+scatter
+#In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S and the opposite for the wrack treatment
 
-#We can nest NBS treatments within Wrack treatment to ask
-###########################"Does consumption of NBS species differ within Wrack treatments?##################
-#first, remove Macro and Sargassum from the population 
-commedited<-subset(community, !Algae_Spp.== "Sargassum")
-view(commedited)
-commedited2<-subset(commedited, !Algae_Spp.== "Macro")
-view(commedited2)
+#We can nest algae treatments within Wrack treatment to ask
+###########################"Does consumption of algae  species differ within Wrack treatments?##################
 
 #H0: Consumption is the same between Algae Species.
 #HA: Consumption is not the same between Algae Species.
 #H1: Consumption is the same between Wrack Treatments.
 #H2: Consumption is not the same between Wrack Treatments.
-NestedNBSaov<-aov(Algae_Wd ~  Algae_Spp. + Wrack_treatment + Error(Wrack_treatment:Algae_Spp.), data =commedited2)
+NestedNBSaov<-aov(Algae_Wd ~ Algae_Spp. + Wrack_treatment + Error(Wrack_treatment:Algae_Spp.), data =community)
 summary(NestedNBSaov)
-##we reject the H0  (p= 0.0127) and embrace the alternative, consumption is not the same between algae species. 
-##We fail to reject H1 (p= 0.2904), consumption is the same between wrack treatments 
 
 #we can quickly visualize that here
 #H0
-ggplot(commedited2, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
+ggplot(community, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
 #H1
-ggplot(commedited2, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
+ggplot(community, aes(x = Algae_trt, y=Algae_Wd)) + geom_boxplot()
 
 #although we nested Algae Species within Wrack treatment and accounted for the error, all we can say is that total consumption remains the same when Wrack species are different, but we know that consumption is NOT the same within species. Thus Grazers are eating the same amount but consumption may be shifting from one species to another.
 
-#Therefore, if we want to understand how consumption changes by species, we need to consider S. horneri and M. pyrifera as "wrack" and compare all Algae species across Wrack treatment. We should can expect to see a decrease in "wrack" and an increase in "silvetia."
+#######note for collaborators
+###Alternately, If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all Algae species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia." I personally think this is the better analysis that will show the same results in a simplified manner. I know we had previously talked about nesting the anova but i think this way is less messy.
 
 ###So
-completeaov<-lm(Algae_Wd ~ Algae_Spp. + Wrack_treatment, data =community)
-anova(completeaov)
-summary(completeaov)
+aov2<-lm(Algae_Wd ~ Wrack_treatment * Algae_trt, data =community)
+anova(aov2)
+summary(aov2)
 
 
 
