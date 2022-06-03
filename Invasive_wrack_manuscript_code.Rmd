@@ -962,7 +962,11 @@ ggplot(community, aes(x = Algae_trt, y=Algae_Wd)) + geom_boxplot()
 
 #although we nested Algae Species within Wrack treatment and accounted for the error, all we can say is that total consumption remains the same when Wrack species are different, but we know that consumption is NOT the same within species. Thus Grazers are eating the same amount but consumption may be shifting from one species to another.
 
-#######note for collaborators
+
+
+
+
+########################################note for my collaborators#############################
 ###Alternately, If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all Algae species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia." I personally think this is the better analysis that will show the same results in a simplified manner. I know we had previously talked about nesting the anova but i think this way is less messy.
 
 ###So
@@ -970,6 +974,11 @@ aov2<- aov(Algae_Wd ~ Wrack_treatment * Algae_trt, data =community)
 anova(aov2)
 summary(aov2)
 
+#Here we see no difference when looking at consumption by wrack treatment 
+#significant difference in algae treatment
+#significant interaction between algae treatment and wrack treatment....
+
+#the story here is that overall grazing does not differ between a "native wrack" vs "invasive wrack" treatments when we swap the wrack species because the grazing from S. horneri shifts to Silvetia... thats the story I am just not sure how to best show it. I can use some help!
 
 
 ```
