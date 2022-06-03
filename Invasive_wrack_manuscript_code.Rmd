@@ -53,8 +53,9 @@ wrack$propsarg <- wrack$sarg_total / wrack$ellipse_A_m2
 wrack$propmac<- 1 - wrack$propsarg
 
 #make graph to show these proportions
-ggplot(data=wrack, aes(x=site, y=propmac, fill=propsarg)) +
-  geom_bar(stat="identity")
+ggplot(data=wrack, aes(x=site, y=propmac, fill=propsarg)) + 
+  geom_bar(position="fill", stat="identity")
+
 
 ```
 
@@ -969,4 +970,4 @@ fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_tissue_mass, fill= diet))
                            size=10))
 fig2
 ```
-
+ 
