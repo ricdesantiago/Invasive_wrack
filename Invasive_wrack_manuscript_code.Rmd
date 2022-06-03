@@ -9,6 +9,7 @@ editor_options:
 #libraries
 ```{r libraries}
 library(knitr)
+library(jtools)
 library(tidyverse)
 library(tidyr)
 library(ggplot2)
@@ -210,7 +211,7 @@ qqline(tegdiffs5$diffs)
 #there seems to be an outlier, however, the data look normally distributed around the theoretical line. We can proceed to a paired T test
 ```
 
-###Analysis
+###Tegula Analysis
 ```{r}
 #we will conduct a paired-T test.
 
@@ -259,7 +260,7 @@ qqline(pachychoice$algae_Wd)
 
 ```
 
-###Analysis
+###Pachy Analysis
 ```{r}
 
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
@@ -303,7 +304,10 @@ qqline(paguruschoice$algae_Wd)
 #we will conduct a paired-T test.
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
+```
 
+###Pagurus Analysys
+```{r}
 #T test
 t.test(paguruschoice$algae_Wd~paguruschoice$algae_spp., paired= TRUE)
 ## we reject the null hypothesis (t = -3.7593, df = 13, p-value = 0.002385), there was a choice made between algae
@@ -580,8 +584,8 @@ anova(abmodel)
 
 ## H0: There is no relationship between diet and abalone weights
 ## HA: There is a relationship between diet and abalone weights
-abmodel2 <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i + diet , data = abmodels)
-summary(abmodel2)
+abmodel <- aov(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = abmodels)
+Anova(abmodel, type = "III")
 #We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0311)
 
 #check residuals
@@ -664,6 +668,7 @@ cor(tegregressions$Dissected_total_dry_weight, tegregressions$Real_L)
 #Teg Model 1 total dry tissue
 tegmod1<-lm(Dissected_total_dry_weight ~ Real_L, data = tegregressions)
 summary(tegmod1)
+summ(tegmod)
 attributes(tegmod1)
 
 #add the line
@@ -750,9 +755,11 @@ anova(tegmodel)
 ## H0: There is no relationship between diet and tegula weights
 ## HA: There is a relationship between diet and tegula weights
 tegmodel2 <- aov(terminal_total_dry_mass ~ est_total_dry_mass_i + diet , data = tegmodels)
+Anova(tegmodel2, type = "III") #We will use a type 1 sums of squares to determine if there is diet has an effect on final weight after controlling for initial size
 summary(tegmodel2)
-#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0141)
 
+#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0141)
+ 
 #check residuals
 par(mfrow = c(2,2))
 plot(tegmodel2)
@@ -767,27 +774,55 @@ plot(redab.aov.HSD1)
 
 ##Righting times
 ```{r}
+righting<-read.csv("abalone righting tests.csv", header=TRUE)
+view(righting)
+na.omit(righting)
+
+#subset out starved
+righting.tests<-subset(righting, !diet== "starved")
+view(righting.tests) #subset out the starved treatment
+
+
+righting.mod1 <- aov(time_diff ~ diet, data = righting.tests)
+# Create a QQ plot of residuals
+anova(righting.mod1)
+
+
+righting.aov.HSD1 <- HSD.test(righting.mod1 , trt = 'diet') 
+print(righting.aov.HSD1)
+plot(righting.aov.HSD1)
+
+
+
+
+
+
+#make bargraph
 performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
 view(performance)
 na.omit(performance)
 
 #subset the abalone 
 abperf<-subset(performance, grazer_spp.== "red abalone")
+view(abperf) #subset out the starved treatment
 
 #wrangle data to show attempt 1 and attempt 2 side by side for each treatment
-gathered_obs<-gather(abperf, key="righting", value="time", 24:25)
+gathered_obs<-gather(abperf, key="trial", value="time", 24:25)
 view(gathered_obs)
 na.omit(gathered_obs)
-is.factor(gathered_obs$righting)
-gathered_obs$righting<-as.factor(gathered_obs$righting)
+is.factor(gathered_obs$trial)
+gathered_obs$trial<-as.factor(gathered_obs$trial)
 
-#make bargraph
-ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Time (sec)") + ggtitle("Righting Time Before and After Diet Treatment") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
+rightingplot<- ggplot(gathered_obs, aes(x=diet, y=time, fill= trial)) + xlab("") + ylab("Time (sec)") + ggtitle("Righting Time Before and After Diet Treatment") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
   scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera","mixed" = "Mixed","sargassum" = "S. horneri")) +
    geom_vline(xintercept=c(1.5),linetype="dotted") +
   scale_fill_manual("",  values = c("righting_time_1" = "#1260AB", "righting_time_2" = "#009BFF"), labels=c("righting_time_1" = "Initial", "righting_time_2" = "Final")) 
+
+rightingplot
 #Overall, initial righting time was higher for starved treatment individuals followed by M. pyrifera, Mixed and S. horneri
 ##Final righting time increased for starved individuals, mixed, and S. horneri but decreased for M. pyrifera. 
+
+
 
 ```
 
@@ -895,9 +930,10 @@ bartlett.test(Total_Wrack_Algae_Consumed ~ Wrack_treatment, data=community)
 ```{r}
 
 #lets see if consumption between the two wrack species differed using a T-test
-#H0: There is no difference in consumption between S. horneri and M. pyrifera
-#HA: There is a difference in consumption between S. horneri and M. pyrifera
-t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+#H0: There is no difference in total consumption between S. horneri and M. pyrifera treatments
+#HA: There is a difference in total consumption between S. horneri and M. pyrifera treatments
+t.test(community$Total_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+
 ## We reject the null hypothesis (p-value = 3.457e-08) and embrace the alternative, there is a difference in consumption between S. horneri and M. pyrifera
 
 #we want to know if lower palatability of S. horneri causes a shift of consumption onto Native Benthic Seaweeds (NBS)
@@ -930,7 +966,7 @@ ggplot(community, aes(x = Algae_trt, y=Algae_Wd)) + geom_boxplot()
 ###Alternately, If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all Algae species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia." I personally think this is the better analysis that will show the same results in a simplified manner. I know we had previously talked about nesting the anova but i think this way is less messy.
 
 ###So
-aov2<-lm(Algae_Wd ~ Wrack_treatment * Algae_trt, data =community)
+aov2<- aov(Algae_Wd ~ Wrack_treatment * Algae_trt, data =community)
 anova(aov2)
 summary(aov2)
 
@@ -946,10 +982,16 @@ LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T)
 View(LabAssayWholeTissue)
 choice <- LabAssayWholeTissue[1:232,]
 
-fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE) + theme_bw()  + xlab("") + ylab("Algae Mass Consumed (g)") + ggtitle("Food Choice Assay") + theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=12),plot.title =element_text(hjust = 0.5)) + 
-  facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", "Tegula" = "T. funebralis", "Pachy" = "P. crassipes", "Pagurus" = "P. samuelis")),)
-
+fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE) + theme_bw()  + xlab("") + ylab("Algae Consumed (g)") + ggtitle("") + theme(axis.text=element_text(size=7),
+        axis.title=element_text(size=10),plot.title =element_text(hjust = 0.5)) + 
+  
+  facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", "Tegula" = "T. funebralis", "Pachy" = "P. crassipes", "Pagurus" = "P. samuelis")),) +
+theme(strip.text = element_text(face = "italic")) +
+  
+  scale_x_discrete(limits = c("macro",  "sargassum"), labels=c("macro" = "M. pyrifera", "sargassum" = "S. horneri")) +
+  theme(axis.text.x = element_text(face="italic", 
+                           size=10))
+  
 fig1
 
 #performance
@@ -959,15 +1001,30 @@ fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_tissue_mass, fill= diet))
   geom_boxplot(show.legend = FALSE) + theme_bw() + 
   xlab("Diet") + 
   ylab("Dry Tissue Mass (g)") + 
-  ggtitle("Herbivore Dry Tissue Mass by Diet") + 
+  ggtitle("") + 
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=12), plot.title =element_text(hjust = 0.5)) +
-  facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "H. rufescence", "tegula" = "T. funebralis"))) +
+  facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "H. rufescence", "tegula" = "T. funebralis"))) +  theme(strip.text = element_text(face = "italic")) +
+  
   scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera",
                               "mixed" = "Mixed","sargassum" = "S. horneri")) +
    geom_vline(xintercept=c(1.5),linetype="dotted") +
    theme(axis.text.x = element_text(face="italic", 
-                           size=10))
+                           size=10)) 
+
 fig2
+
+#rigthing times of H. rufesens
+#make bargraph
+fig3<-ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Time (sec)") + ggtitle("") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
+  scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera","mixed" = "Mixed","sargassum" = "S. horneri")) +  theme(axis.text.x = element_text(face = "italic")) +
+  
+   geom_vline(xintercept=c(1.5),linetype="dotted") +
+  scale_fill_manual("",  values = c("righting_time_1" = "#1260AB", "righting_time_2" = "#009BFF"), labels=c("righting_time_1" = "Initial", "righting_time_2" = "Final")) +
+  scale_fill_grey()
+
+fig3
+
+
 ```
  
