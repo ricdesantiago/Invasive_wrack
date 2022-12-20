@@ -2,11 +2,16 @@
 title: "Invasive_wrack_manuscript_code"
 author: "Ric DeSantiago"
 date: "12/15/2021"
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+editor_options:
   chunk_output_type: console
 ---
-#libraries
+
+# Libraries
+
 ```{r libraries}
 library(knitr)
 library(jtools)
@@ -34,8 +39,8 @@ library(rstatix)
 #hi
 ```
 
+# Load Field Surveys
 
-#Load Field Surveys
 ```{r}
 
 wrack<-read.csv("InvasiveWrackSurveySNIJan2020.csv", header = TRUE)
@@ -45,7 +50,8 @@ view(Grazer_Survey_Data)
 
 ```
 
-##Wrack surveys
+## Wrack surveys
+
 ```{r}
 #make a new column in datasheet for the proportion of total wrack patty area made up of sargassum
 wrack$propsarg <- wrack$sarg_total / wrack$ellipse_A_m2
@@ -60,7 +66,8 @@ ggplot(data=wrack, aes(x=site, y=propmac, fill=propsarg)) +
 
 ```
 
-##Invasive Wrack usage survey
+### Invasive Wrack usage survey
+
 ```{r}
 Grazer_Survey_Data <- read.csv("GrzrOnOffSurveySNIJan2020.csv") 
 
@@ -85,48 +92,47 @@ barplot<- ggplot(Grazer_Survey_Data_long, aes(fill=Wrack.Use, y=Grazer_sum, x=gr
 
 barplot
 
-
 pdf(file = "On.off_grazersurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
 
-Plot_Bar_g <- ggplot(data=meanAbundance_grazer,
-                      aes(y=mean_Abundance, 
-                          x=grzr_sp, 
-                          fill = Wrack.Use)) +
-  geom_bar(stat = "identity", colour = "black", 
-           position = position_dodge(width = 0.9))
-
-Plot_Bar_g + theme(axis.title.x = element_text(face="bold",
-                                                 size=22),
-                           axis.text.x  = element_text(size=20)) + 
-  xlab("Grazer") +
-  theme(axis.title.y = element_blank()) + 
-  ylab("Count (max 20)") +
-  theme(axis.title.y = element_text(angle=90, 
-                                    face="bold", 
-                                    size=22, 
-                                    vjust=1.5),
-        axis.text.y  = element_text(size=20)) +
-  geom_errorbar(aes(ymin=mean_Abundance - SE, 
-                    ymax=mean_Abundance + SE), width = 0.05,
-                position=position_dodge(width = 0.9)) +
-  scale_fill_manual(name = "Wrack usage",
-                    values = c("#999999", "#009E73")) +
-  theme(legend.justification=c(.5,.5), legend.position=c(.18,.88)) +
-  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
-                     breaks = pretty(c(0,20), n = 5), 
-                     limits = c(0,20))
-
-dev.off()
+# Plot_Bar_g <- ggplot(data=meanAbundance_grazer,
+#                      aes(y=mean_Abundance, 
+#                          x=grzr_sp, 
+#                          fill = Wrack.Use)) +
+#  geom_bar(stat = "identity", colour = "black", 
+#           position = position_dodge(width = 0.9)) 
+#
+#Plot_Bar_g + theme(axis.title.x = element_text(face="bold",
+#                                                size=22),
+#                           axis.text.x  = element_text(size=20)) + 
+# xlab("Grazer") +
+#  theme(axis.title.y = element_blank()) + 
+#  ylab("Count (max 20)") +
+#  theme(axis.title.y = element_text(angle=90, 
+#                                    face="bold", 
+#                                    size=22, 
+#                                    vjust=1.5),
+#        axis.text.y  = element_text(size=20)) +
+#  geom_errorbar(aes(ymin=mean_Abundance - SE, 
+#                    ymax=mean_Abundance + SE), width = 0.05,
+#                position=position_dodge(width = 0.9)) +
+#  scale_fill_manual(name = "Wrack usage",
+#                    values = c("#999999", "#009E73")) +
+#  theme(legend.justification=c(.5,.5), legend.position=c(.18,.88)) +
+#  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+#                     breaks = pretty(c(0,20), n = 5), 
+#                    limits = c(0,20)) )
+#
+#dev.off()
 
 #let's extract the sample sizes for each of the grazers bc we didn't see grazers everytime
 
-Grazer_Survey_Data_reduced %>% 
-  count(grzr_sp)
+#Grazer_Survey_Data_reduced %>% 
+# count(grzr_sp)
 
 ```
 
+# Choice Assays
 
-#Choice Assays
 ```{r}
 #import and name data
 LabAssayWholeTissue <-read.csv("LabAssaysWholeTissue.csv",header=T)
@@ -135,13 +141,13 @@ View(LabAssayWholeTissue)
 #ensure factors are correctly read
 is.numeric(LabAssayWholeTissue$algae_Wd)
 is.factor(LabAssayWholeTissue$algae_spp.)
-
+LabAssayWholeTissue$algae_spp.<-as.factor(LabAssayWholeTissue$algae_spp.)
 
 AllSpeciesWholeTissue<-ggplot(LabAssayWholeTissue, aes(x=grazer_spp., y=algae_Wd, fill= algae_spp.)) + geom_boxplot() + theme_bw()   + xlab("Algae Species") + ylab("Total Consumed (g)") + ggtitle("Live algae choice assay") + theme(plot.title =element_text(hjust = 0.5))
 AllSpeciesWholeTissue
 ```
 
-##Tegula
+## Tegula
 
 ```{r}
 #read and rename file
@@ -156,10 +162,10 @@ view(tegula)
 tegulachoice <- subset(tegula, trt == "exp")
 view(tegulachoice)
 
-#visualize data
-
 #look at the data in boxplots to visualize the spread around the median
-ggplot(tegulachoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+tegbox<-ggplot(tegulachoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+tegbox
+
 #there seems to be an outlier in each treatment that may be pulling distributions, however, we are leaving outliers in as they are biological real.
 
 #separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
@@ -168,13 +174,13 @@ tegulachoicesarg<-subset(tegulachoice, algae_spp. == "sargassum")
 ggplot(tegulachoicesarg, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
 mean(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
 sd(tegula$algae_Wd[tegula$algae_spp.== 'sargassum'],na.rm = T)
+
 #macrocystis
 tegulachoicemacro<-subset(tegulachoice, algae_spp. == "macro")
 ggplot(tegulachoicemacro, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
-mean(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
-sd(tegula$algae_Wd[tegula$algae_spp.== 'macro'],na.rm = T)
+mean(tegula$algae_Wd[tegulachoice$algae_spp.== 'macro'],na.rm = T)
+sd(tegula$algae_Wd[tegulachoice$algae_spp.== 'macro'],na.rm = T)
 
-#Ds of weight in S. horneri tend to be right leaning while M. pyrifera samples tend to be left learning
 #test for normality
 par(mfrow=c(2,2))
 qqnorm(tegulachoicemacro$algae_Wd)
@@ -183,7 +189,6 @@ qqnorm(tegulachoicesarg$algae_Wd)
 qqline(tegulachoicesarg$algae_Wd)
 # when graphing the sample quantities versues theoretical, we can see that the data tend to center around the fitted line. We can proceed.
 
-##however, our data are not independent since they are a choice between two options of algae within each replicate
 ### To address the question "Do grazers show a preference between S. horneri or M. pyrifera?" we will use consumption as a proxy for choice. Thus, we can use a paired T test to see if there is a difference in "total consumed" between S. horneri and M. pyrifera.
 ####Paired t-tests are essentially one-sample t-tests, but you are comparing a distribution of DIFFERENCES to a theoretical one rather than a distribution of sample statistics. The original data are not used, rather the mean, variance, and standard deviation are based on the DIFFERENCES. Thus, we don't need equal variances, only normal distribution of means and equal sample size. 
 
@@ -205,13 +210,14 @@ tegdiffs5<- mutate(tegdiffs4, diffs = algae_Wd...4 - algae_Wd...2)
 view(tegdiffs5)
 
 #check for normality of the differences
-ggplot(tegdiffs5, aes(x=diffs)) + geom_histogram(binwidth=0.1)
+ggplot(tegdiffs5, aes(x=diffs)) + geom_histogram(binwidth=0.01)
 qqnorm(tegdiffs5$diffs)
 qqline(tegdiffs5$diffs)
 #there seems to be an outlier, however, the data look normally distributed around the theoretical line. We can proceed to a paired T test
 ```
 
-###Tegula Analysis
+### Tegula Analysis
+
 ```{r}
 #we will conduct a paired-T test.
 
@@ -222,18 +228,17 @@ qqline(tegdiffs5$diffs)
 t.test(tegulachoice$algae_Wd~tegulachoice$algae_spp., mu=0, alt="two.sided", paired=T,conf.level=0.95)
 ## we reject the null hypothesis (t = 5.7152, df = 13, p-value = 7.111e-05), there was a choice made between algae
 
-
 #make boxplot 
 ggplot(tegula, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by T. funebralis") + theme(plot.title =element_text(hjust = 0.5)) 
 
 #When given a choice between S. horneri and M. pyrifera, Tegula preferred M. pyrifera.
 
-##this will be repeated for all other grazers.
+##this analysis will be repeated for all other grazers.
 
 ```
 
+## Striped Shore Crab
 
-##Pachy
 ```{r}
 #subset the P. crassipes rows
 pachy<-subset(LabAssayWholeTissue, grazer_spp.== "Pachy")
@@ -249,18 +254,53 @@ view(pachychoice)
 ggplot(pachychoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 #there seems to be an outlier in the S. horneri treatment that may be pulling the distribution
 
-#check for normality
-ggplot(pachychoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
-qqnorm(pachychoice$algae_Wd)
-qqline(pachychoice$algae_Wd)
-#there seems to be an outlier, however, the data look normally distributed around the theoretical line
 
+#separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
+#sargassum
+pacchoicesarg<-subset(pachychoice, algae_spp. == "sargassum")
+ggplot(pacchoicesarg, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(pacchoicesarg$algae_Wd[pacchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
+sd(pacchoicesarg$algae_Wd[pacchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
+
+#macrocystis
+pacchoicemac<-subset(pachychoice, algae_spp. == "macro")
+ggplot(pacchoicemac, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(pacchoicemac$algae_Wd[pacchoicemac$algae_spp.== 'macro'],na.rm = T)
+sd(pacchoicemac$algae_Wd[pacchoicemac$algae_spp.== 'macro'],na.rm = T)
+
+#test for normality
+par(mfrow=c(2,2))
+qqnorm(pacchoicemac$algae_Wd)
+qqline(pacchoicemac$algae_Wd)
+qqnorm(pacchoicemac$algae_Wd)
+qqline(pacchoicemac$algae_Wd)
+
+####make the data in "wide form" to create column to display differences#####
+#create a dataframe with just important columns
+pacdiffs <- na.omit(pachychoice[, -c(1:8, 10:12, 14:22)])
+view(pacdiffs)
+#subset S.horneri only
+pacdiffs2<-subset(pacdiffs, algae_spp. == "sargassum")
+view(pacdiffs2)
+#subset M. pyrifera only
+pacdiffs3<-subset(pacdiffs, algae_spp. == "macro")
+view(pacdiffs3)
+#Bind the two datasets in "wide form"
+pacdiffs4<- bind_cols(pacdiffs2,tegdiffs3)
+view(pacdiffs4)
+#create new column with the differences by subtracting S. horneri consumed from M. pyrifera consumed
+pacdiffs5<- mutate(pacdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
+view(pacdiffs5)
+
+qqnorm(pacdiffs5$diffs)
+qqline(pacdiffs5$diffs)
 #we will conduct a paired-T test.
 
 
 ```
 
-###Pachy Analysis
+### Striped Shore Crab Analysis
+
 ```{r}
 
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
@@ -278,7 +318,8 @@ ggplot(pachy, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() +
 #When given a choice between S. horneri and M. pyrifera, P. Crassipes showed no preference.
 ```
 
-##Pagurus
+## Hermit Crab
+
 ```{r}
 
 #subset the P. samuelis rows
@@ -294,21 +335,55 @@ view(paguruschoice)
 #look at the data in boxplots to visualize the spread around the median
 ggplot(paguruschoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 
+#separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
+#sargassum
+pagchoicesarg<-subset(paguruschoice, algae_spp. == "sargassum")
+ggplot(pagchoicesarg, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(pagchoicesarg$algae_Wd[pagchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
+sd(pagchoicesarg$algae_Wd[pagchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
 
-#check for normality
-ggplot(paguruschoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
-qqnorm(paguruschoice$algae_Wd)
-qqline(paguruschoice$algae_Wd)
+#macrocystis
+pagchoicemac<-subset(paguruschoice, algae_spp. == "macro")
+ggplot(pagchoicemac, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(pagchoicemac$algae_Wd[pagchoicemac$algae_spp.== 'macro'],na.rm = T)
+sd(pagchoicemac$algae_Wd[pagchoicemac$algae_spp.== 'macro'],na.rm = T)
+
+#test for normality
+par(mfrow=c(2,2))
+qqnorm(pagchoicemac$algae_Wd)
+qqline(pagchoicemac$algae_Wd)
+qqnorm(pagchoicesarg$algae_Wd)
+qqline(pagchoicesarg$algae_Wd)
+
 #there seems to be an outlier on both ends, however, the data look normally distributed around the theoretical line
+pagdiffs <- na.omit(paguruschoice[, -c(1:8, 10:12, 14:22)])
+view(pagdiffs)
+#subset S.horneri only
+pagdiffs2<-subset(pagdiffs, algae_spp. == "sargassum")
+view(pagdiffs2)
+#subset M. pyrifera only
+pagdiffs3<-subset(pagdiffs, algae_spp. == "macro")
+view(pagdiffs3)
+#Bind the two datasets in "wide form"
+pagdiffs4<- bind_cols(pagdiffs2,tegdiffs3)
+view(pagdiffs4)
+#create new column with the differences by subtracting S. horneri consumed from M. pyrifera consumed
+pagdiffs5<- mutate(pagdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
+view(pagdiffs5)
 
+qqnorm(pagdiffs5$diffs)
+qqline(pagdiffs5$diffs)
 #we will conduct a paired-T test.
-## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
-## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
+
 ```
 
-###Pagurus Analysys
+### Hermit Crab Analysis
+
 ```{r}
 #T test
+
+## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
+## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
 t.test(paguruschoice$algae_Wd~paguruschoice$algae_spp., paired= TRUE)
 ## we reject the null hypothesis (t = -3.7593, df = 13, p-value = 0.002385), there was a choice made between algae
 
@@ -319,9 +394,10 @@ ggplot(pagurus, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot()
 #When given a choice between S. horneri and M. pyrifera, P. samuelis showed a preference for sargassum .
 ```
 
-##Abalone September 2019
-```{r}
+## Black Abalone
 
+```{r}
+## conducte September 2019
 #subset the A. cracherodii rows
 abalone<-subset(LabAssayWholeTissue, grazer_spp.== "Haliotis cracherodii")
 view(abalone)
@@ -336,16 +412,51 @@ view(abalonechoice)
 ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
 
 
-#check for normality
-ggplot(abalonechoice, aes(x=algae_Wd)) + geom_histogram(binwidth=0.5)
-qqnorm(abalonechoice$algae_Wd)
-qqline(abalonechoice$algae_Wd)
-#the data seem normal
+#separate the histogram by species of algae to visually determine if the distributions of differences (f-i, adjusted for autogenic growth) look normal
+#sargassum
+abchoicesarg<-subset(abalonechoice, algae_spp. == "sargassum")
+ggplot(abchoicesarg, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(abchoicesarg$algae_Wd[abchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
+sd(abchoicesarg$algae_Wd[abchoicesarg$algae_spp.== 'sargassum'],na.rm = T)
 
+#macrocystis
+abchoicemac<-subset(abalonechoice, algae_spp. == "macro")
+ggplot(abchoicemac, aes(x=algae_Wd)) + geom_histogram(binwidth=0.1)
+mean(abchoicemac$algae_Wd[abchoicemac$algae_spp.== 'macro'],na.rm = T)
+sd(abchoicemac$algae_Wd[abchoicemac$algae_spp.== 'macro'],na.rm = T)
+
+#test for normality
+par(mfrow=c(2,2))
+qqnorm(abchoicesarg$algae_Wd)
+qqline(abchoicesarg$algae_Wd)
+qqnorm(abchoicemac$algae_Wd)
+qqline(abchoicemac$algae_Wd)
+
+####make the data in "wide form" to create column to display differences#####
+#create a dataframe with just important columns
+abdiffs <- na.omit(abalonechoice[, -c(1:8, 10:12, 14:22)])
+view(abdiffs)
+#subset S.horneri only
+abdiffs2<-subset(abdiffs, algae_spp. == "sargassum")
+view(abdiffs2)
+#subset M. pyrifera only
+abdiffs3<-subset(abdiffs, algae_spp. == "macro")
+view(abdiffs3)
+#Bind the two datasets in "wide form"
+abdiffs4<- bind_cols(abdiffs2,abdiffs3)
+view(abdiffs4)
+#create new column with the differences by subtracting S. horneri consumed from M. pyrifera consumed
+abdiffs5<- mutate(abdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
+view(abdiffs5)
+
+qqnorm(abdiffs5$diffs)
+qqline(abdiffs5$diffs)
 #we will conduct a paired-T test.
+
 ```
 
-###Analysis
+### Black Abalone Analysis
+
 ```{r}
 ## H0: There is no difference in total consumed between S. horneri and M. pyrifera  (i.e. there is no choice between algae).
 ## HA: There is a difference in total consumed between S. horneri and M. pyrifera  (i.e. there is a choice between algae).
@@ -363,8 +474,8 @@ ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_box
 
 ```
 
+# Performance Assays (March-April 2020)
 
-#Performance Assays March-April 2020
 ```{r}
 #load data
 performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
@@ -385,9 +496,8 @@ ggplot(performance, aes(y=dry_mass_percent_change, x=diet)) + geom_boxplot()
 
 ```
 
+## Red Abalone (Data Exploration)
 
-##Red Abalone
-###Exploring Data
 ```{r}
 
 #subset data for abalone
@@ -430,7 +540,8 @@ ggplot(redabaloneperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet
 
 ```
 
-###Estimating Initial Masses
+### Red Abalone Initial Mass Estimations
+
 ```{r}
 
 #test if there is a significant difference in initial wet masses using a simple anova
@@ -537,8 +648,9 @@ ggplot(redabaloneperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) 
 
 ```
 
-###Abalone Analysis
-``` {r}
+### Red Abalone Analysis
+
+```{r}
 
 #remove starved treatment
 abmodels<-subset(redabaloneperformance, !diet== "starved")
@@ -556,6 +668,7 @@ abline(lm(abmodels$dry_mass_percent_change ~ abmodels$est_total_dry_mass_i))
 #there seems to be a slight correlation between initial dry mass and percent change. Bigger individuals change less. Thus we will use initial weight estimates as a covariate to look at the effect of diet on size. By doing this, we account for initial weights but lose one degree of freedom
 
 abmodel <- lm(terminal_total_dry_mass ~ diet * est_total_dry_mass_i , data = abmodels)
+summary(abmodel)
 # Create a QQ plot of residuals
 par(mfrow = c(2, 2))
 plot(abmodel)
@@ -599,9 +712,8 @@ plot(redab.aov.HSD1)
 #all treatments differ from each other
 ```
 
+## Tegula (Data Exploration)
 
-## Tegula
-###Exploring Data
 ```{r}
 #subset data for tegula
 tegulaperformance<-subset(performance, grazer_spp.== "tegula")
@@ -634,7 +746,8 @@ ggplot(tegulaperformance, aes(x=diet, y=terminal_dry_tissue_mass , fill= diet)) 
 ggplot(tegulaperformance, aes(x=diet, y=terminal_shell_dry_mass , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("Shell Dry Mass (g)") + ggtitle("T. funebralis shell dry mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 ```
 
-###Estimating Initial Masses
+### Tegula (Initial Mass Estimates)
+
 ```{r}
 #test if there is a significant difference in initial wet masses using a simple anova
 initialmassteg<-aov(tegulaperformance$wetmass_i ~ tegulaperformance$diet)
@@ -710,7 +823,8 @@ ggplot(tegulaperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + ge
 
 ```
 
-###Tegula Analysis
+### Tegula Analysis
+
 ```{r}
 
 
@@ -735,7 +849,7 @@ par(mfrow = c(2, 2))
 plot(Tegmodel)
 #the data look fairly normal
 
-#Since the data are not normal, we can't use a Bartlette test for equal variance, instead we will use a Levene Test
+#test the homogeniety of variances 
 bartlett.test(terminal_total_dry_mass ~ diet , data=tegmodels)
 #Bartlet test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
 
@@ -771,8 +885,8 @@ plot(redab.aov.HSD1)
 #all treatments differ from each other
 ```
 
+## Righting times
 
-##Righting times
 ```{r}
 righting<-read.csv("abalone righting tests.csv", header=TRUE)
 view(righting)
@@ -826,13 +940,16 @@ rightingplot
 
 ```
 
-#Wrack Dependent Community Assay
+# Wrack Dependent Community Assay
+
 ```{r}
 community<-read.csv("Comm grazer exp.csv", header = T)
-view(community )
+comm<-subset(community, Treatment=="Exp")
+view(comm)
 ```
 
-##Exploring Data
+## Exploring Data
+
 ```{r}
 
 #####visualize Data######
@@ -842,101 +959,121 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw(
 
 #lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Native Benthic Seaweed Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
-#The  total biomass of native benthic seaweeds consumed appears to be higher in S. horneri treatment. Suggesting that consumption may have shifted onto NBS when S. horneri was introduced.
+#The  total biomass of native benthic seaweeds consumed appears to be higher in S. horneri treatment. Suggesting that consumption may have shifted onto NBS when S. horneri was introduced
 
 #Now lets look at how consumption of just the WRACK species differs by Treatment
 ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Wrack Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
-#############lets check the normality of consumption of NBS Data##############
-ggplot(community, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.5)
 
-#for S.horneri treatment
-commSH<- subset(community, Wrack_treatment == "S")
-view(commSH)
-ggplot(commSH, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.5)
+#############lets check the assumptions##############
 
-#difficult to visualize normally with low replication 
-qqnorm(commSH$Total_Benthic_Algae_Consumed)
-qqline(commSH$Total_Benthic_Algae_Consumed)
-#The data tend to deviate away from the theoretical line at both ends
+#normality
+#sargassum
+comm_sarg<-subset(comm, Algae_Spp.== "Sargassum")
+qqnorm(comm_sarg$Algae_Wd)
+qqline(comm_sarg$Algae_Wd)
+hist(comm_sarg$Algae_Wd)
 
-#lets conduct an SW test for normality
-shapiro_test(commSH$Total_Benthic_Algae_Consumed)
-#SW test fails to reject the Ho(p=0.154), the data are normally distributed
+#macro
+comm_mac<-subset(comm, Algae_Spp.== "Macro")
+qqnorm(comm_mac$Algae_Wd)
+qqline(comm_mac$Algae_Wd)
+hist(comm_mac$Algae_Wd)
 
+#ulva
+comm_ulva<-subset(comm, Algae_Spp.== "Ulva")
+qqnorm(comm_ulva$Algae_Wd)
+qqline(comm_ulva$Algae_Wd)
+hist(comm_ulva$Algae_Wd)
+shapiro_test(comm_ulva$Algae_Wd)
+comm_sil$Algae_Wd <- log(comm_ulva$Algae_Wd)
 
-#for M. pyrifera treatment
-commMP<- subset(community, Wrack_treatment == "M")
-view(commMP)
-ggplot(commMP, aes(x=Total_Benthic_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+#silvetia
+comm_sil<-subset(comm, Algae_Spp.== "Silvetia")
+qqnorm(comm_sil$Algae_Wd)
+qqline(comm_sil$Algae_Wd)
+hist(comm_sil$Algae_Wd)
+shapiro_test(comm_sil$Algae_Wd)
+comm_sil$Algae_Wd <- log(comm_sil$Algae_Wd)
 
-qqnorm(commMP$Total_Benthic_Algae_Consumed)
-qqline(commMP$Total_Benthic_Algae_Consumed)
-#the data tend to deviate away from the theoretical line at the top of the distribution.
+#centroceras
+comm_cen<-subset(comm, Algae_Spp.== "Centroceras")
+qqnorm(comm_cen$Algae_Wd)
+qqline(comm_cen$Algae_Wd)
+hist(comm_cen$Algae_Wd)
+shapiro_test(comm_cen$Algae_Wd)
+#log transform
+comm_cen$Algae_Wd <- log(comm_cen$Algae_Wd)
 
-#lets conduct an SW test for normality
-shapiro_test(commMP$Total_Benthic_Algae_Consumed)
-#SW test fails to reject the Ho(p=0.217), the data are normally distributed
+#subset data the wrack treatments and only include NBS
+NBS_Sub<-subset(comm, Algae_trt != "Wrack")
+view(NBS_Sub)
+is.factor(NBS_Sub$Rep_No.)
+NBS_Sub$Rep_No.<-as.factor(NBS_Sub$Rep_No.)
 
+#subset data to show only the columns we need
+NBS_Sub2 <- NBS_Sub[, c("Rep_No.","Wrack_treatment", "Algae_Spp.","Algae_Wd")]
+view(NBS_Sub2)
+str(NBS_Sub2) #ensure variables are numeric or factors
 
+#practice
+commmodel<-lme(Algae_Wd~Wrack_treatment*Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub2)
+summary(commmodel)
+coef(commmodel)
+plot(ranef(commmodel))
+plot(commmodel)
 
-#############lets check the normality of consumption of WRACK TREATMENT CONSUMPTION Data##############
+# Fit the mixed effect model
+fit <- lmer(Algae_Wd ~ Algae_Spp. + (1 | Rep_No.), data = NBS_Sub)
 
-#for S.horneri treatment
-SHwrack<- subset(community, Wrack_treatment == "S")
-view(SHwrack)
-ggplot(SHwrack, aes(x=Total_Wrack_Algae_Consumed)) + geom_histogram(binwidth=0.1)
+# Extract the residuals
+residuals <- resid(fit)
 
-#the histogram shows a fairly normal ditribution
-qqnorm(SHwrack$Total_Wrack_Algae_Consumed)
-qqline(SHwrack$Total_Wrack_Algae_Consumed)
-#The data are distributed around the theoretical line
+# Plot the residuals
+plot(density(residuals))
 
-#lets conduct an SW test for normality
-shapiro_test(SHwrack$Total_Wrack_Algae_Consumed)
-#SW test fails to reject the Ho(p=0.976), the data are normally distributed
-
-
-#for M. pyrifera treatment
-MPwrack<- subset(community, Wrack_treatment == "M")
-view(MPwrack)
-ggplot(MPwrack, aes(x=Total_Wrack_Algae_Consumed)) + geom_histogram(binwidth=0.1)
-
-qqnorm(MPwrack$Total_Wrack_Algae_Consumed)
-qqline(MPwrack$Total_Wrack_Algae_Consumed)
-#the data tend show a bit of scatter but still tend to center around the theoretical line
-
-#lets conduct an SW test for normality
-shapiro_test(MPwrack$Total_Wrack_Algae_Consumed)
-#SW test fails to reject the Ho(p=0.944), the data are normally distributed
-
-
-#########Test for equal Variances for a 2 Sample T Test########
-#We are clear to conduct T-tests
-
-#Native Benthic Seaweeds by Wrack Treatment
-bartlett.test(Total_Benthic_Algae_Consumed ~ Wrack_treatment, data=community)
-#Bartlett test fails to reject the null Ho (p-value =0.9962), thus we accept the hypothesis that our variances are equal
-
-
-#Wrack Seaweeds by Wrack Treatment
-bartlett.test(Total_Wrack_Algae_Consumed ~ Wrack_treatment, data=community)
-#Bartlett test rejects the null Ho (p-value =0.003831), thus we accept the hypothesis that our variances are not equal. 
-##We will Perform a Welch's T test for the unequal variences
+# Perform a Shapiro-Wilk test
+shapiro.test(residuals)
 ```
 
-##Wrack vs Native Benthic  Seaweed Analyses
+## Wrack vs Native Benthic Seaweed Analyses
+
 ```{r}
 
-#lets see if consumption between the two wrack species differed using a T-test
+#lets see if total consumption of ALL Seaweeds differed by wrack treatment using a T-test
 #H0: There is no difference in total consumption between S. horneri and M. pyrifera treatments
 #HA: There is a difference in total consumption between S. horneri and M. pyrifera treatments
 t.test(community$Total_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
 
-## We reject the null hypothesis (p-value = 3.457e-08) and embrace the alternative, there is a difference in consumption between S. horneri and M. pyrifera
+mean(community$Total_Algae_Consumed[community$Wrack_treatment== 'M'],na.rm = T)
+sd(community$Total_Algae_Consumed[community$Wrack_treatment== 'M'],na.rm = T)
 
-#we want to know if lower palatability of S. horneri causes a shift of consumption onto Native Benthic Seaweeds (NBS)
+mean(community$Total_Algae_Consumed[community$Wrack_treatment== 'S'],na.rm = T)
+sd(community$Total_Algae_Consumed[community$Wrack_treatment== 'S'],na.rm = T)
+## We fail to reject the null hypothesis (p-value = 0.215) 
+
+ggplot(community, aes(x = Wrack_treatment, y=Total_Algae_Consumed)) + geom_boxplot()
+
+
+#### now we test if consumption of WRACK differed. ie., is one wrack species less palatable than the other.?
+#H0: There is no difference in consumption between S. horneri and M. pyrifera 
+#HA: There is a difference in  consumption between S. horneri and M. pyrifera 
+t.test(community$Total_Wrack_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+##we reject the null hypothesis and embrace the alternative, there was a difference in consumption between wrack species. Consumption of M. pyrifera was significantly higher (p=3.457e-08)
+
+
+#lets see if total consumption of NBS  differed by wrack treatment using a T-test
+#H0: There is no difference in total NBS consumption between S. horneri and M. pyrifera treatments
+#HA: There is a difference in total NBS consumption between S. horneri and M. pyrifera treatments
+t.test(community$Total_Benthic_Algae_Consumed~community$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+
+mean(community$Total_Benthic_Algae_Consumed[community$Wrack_treatment== 'M'],na.rm = T)
+sd(community$Total_Benthic_Algae_Consumed[community$Wrack_treatment== 'M'],na.rm = T)
+
+mean(community$Total_Benthic_Algae_Consumed[community$Wrack_treatment== 'S'],na.rm = T)
+sd(community$Total_Benthic_Algae_Consumed[community$Wrack_treatment== 'S'],na.rm = T)
+## We fail to reject the null hypothesis (p-value = 0.0697). While total consumption is not different between NBS, we still want to know if lower palatability of S. horneri causes a shift of consumption onto Native Benthic Seaweeds (NBS)
 ##(NBS= Algae_Spp. - M. pyrifera and S. horneri) consumption.##
 
 #look at an scatterplot
@@ -944,47 +1081,32 @@ scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_trt)) +  geom_jitter(aes(co
 scatter
 #In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S and the opposite for the wrack treatment
 
-#We can nest algae treatments within Wrack treatment to ask
-###########################"Does consumption of algae  species differ within Wrack treatments?##################
+   
+### If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all seaweed species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia."
 
-#H0: Consumption is the same between Algae Species.
-#HA: Consumption is not the same between Algae Species.
-#H1: Consumption is the same between Wrack Treatments.
-#H2: Consumption is not the same between Wrack Treatments.
-NestedNBSaov<-aov(Algae_Wd ~ Algae_Spp. + Wrack_treatment + Error(Wrack_treatment:Algae_Spp.), data =community)
-summary(NestedNBSaov)
-
-#we can quickly visualize that here
-#H0
-ggplot(community, aes(x = Wrack_treatment, y=Algae_Wd)) + geom_boxplot()
-#H1
-ggplot(community, aes(x = Algae_trt, y=Algae_Wd)) + geom_boxplot()
-
-#although we nested Algae Species within Wrack treatment and accounted for the error, all we can say is that total consumption remains the same when Wrack species are different, but we know that consumption is NOT the same within species. Thus Grazers are eating the same amount but consumption may be shifting from one species to another.
-
-
-
-
-
-########################################note for my collaborators#############################
-###Alternately, If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all Algae species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia." I personally think this is the better analysis that will show the same results in a simplified manner. I know we had previously talked about nesting the anova but i think this way is less messy.
-
-###So
-aov2<- aov(Algae_Wd ~ Wrack_treatment * Algae_trt, data =community)
-anova(aov2)
+## lets look at this using ANOVA
+#H0: There is no difference in  seaweed consumption between Invasive (S) and Native (M) treatments
+#HA: There is a difference in  seaweed consumption between Invasive (S) and Native (M) treatments
+aov2<- aov(Algae_Wd ~ Algae_trt, data =community)
 summary(aov2)
 
-#Here we see no difference when looking at consumption by wrack treatment 
-#significant difference in algae treatment
-#significant interaction between algae treatment and wrack treatment....
+### We reject the null hypothesis and embrace the alternative, there is a difference in consumption of seaweeds
 
-#the story here is that overall grazing does not differ between a "native wrack" vs "invasive wrack" treatments when we swap the wrack species because the grazing from S. horneri shifts to Silvetia... thats the story I am just not sure how to best show it. I can use some help!
+### now lets look how consumption differs using a post-hoc test 
+NBSposthoc <- HSD.test(aov2 , trt = 'Algae_trt') 
+print(NBSposthoc)
+plot(NBSposthoc)
+
+# Silvetia    3.3795300      a
+# Wrack       1.2604175      b
+# Centroceras 0.4801150      c
+# Ulva        0.4767825      c
 
 
 ```
 
+# Figures for Manuscript
 
-#Figures for Manuscript
 ```{r}
 #choice
 LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T)
@@ -1025,15 +1147,22 @@ fig2
 
 #rigthing times of H. rufesens
 #make bargraph
-fig3<-ggplot(gathered_obs, aes(x=diet, y=time, fill= righting)) + xlab("") + ylab("Time (sec)") + ggtitle("") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
-  scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera","mixed" = "Mixed","sargassum" = "S. horneri")) +  theme(axis.text.x = element_text(face = "italic")) +
-  
+rightingplot<- ggplot(gathered_obs, aes(x=diet, y=time, fill= trial)) + xlab("") + ylab("Time (sec)") + ggtitle("Righting Time Before and After Diet Treatment") + theme(axis.text=element_text(size=12)) + geom_bar(stat="identity",position=position_dodge()) + theme_minimal() +  
+  scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"), labels=c("starved" = "Starved", "macro" = "M. pyrifera","mixed" = "Mixed","sargassum" = "S. horneri")) +
    geom_vline(xintercept=c(1.5),linetype="dotted") +
-  scale_fill_manual("",  values = c("righting_time_1" = "#1260AB", "righting_time_2" = "#009BFF"), labels=c("righting_time_1" = "Initial", "righting_time_2" = "Final")) +
-  scale_fill_grey()
+  scale_fill_manual("",  values = c("righting_time_1" = "#1260AB", "righting_time_2" = "#009BFF"), labels=c("righting_time_1" = "Initial", "righting_time_2" = "Final")) 
 
-fig3
+rightingplot
+
+
+
+#community plot
+commplot<- ggplot(community, aes(x=Algae_trt, y=Algae_Wd, fill= Wrack_treatment)) + xlab("") + ylab("Algae Consumed (g)") + ggtitle("") + theme(axis.text=element_text(size=12)) + geom_boxplot() + theme_minimal() +
+  scale_x_discrete(limits = c("Wrack", "Centroceras", "Ulva", "Silvetia"), labels=c("Wrack" = "Wrack", "Centroceras" = "C. clavulatum","Ulva" = "Ulva spp.","Silvetia" = "S. compressa")) +
+   geom_vline(xintercept=c(1.5),linetype="dotted") +
+  scale_fill_manual("Wrack Treatment",  values = c("M" = "#F8766D", "S" = "#00BFC4"), labels=c("M" = "M. pyrifera", "S" = "S. horneri")) 
+
+commplot
 
 
 ```
- 

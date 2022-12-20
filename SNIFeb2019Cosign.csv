@@ -1,0 +1,30 @@
+﻿site,bench,habitat,treatment,dish,initialweight (oz),initialweight (g),finalweight (oz),finalweight (g),adjustedweight
+Cosign,hi ,pools,experimental ,hpe1,1.38,39.1223376,1.34,37.9883568,2.686454514
+Cosign,hi ,pools,experimental ,hpe2,1.45,41.106804,1.34,37.9883568,0.20307103
+Cosign,hi ,pools,experimental ,hpe4,1.41,39.9728232,1.31,37.1378712,0.807345026
+Cosign,hi ,pools,experimental ,hpe5,1.41,39.9728232,1.38,39.1223376,0.8504856
+Cosign,hi ,crevice,experimental ,hce1,1.34,37.9883568,0.81,22.9631112,13.86529577
+Cosign,hi ,crevice,experimental ,hce2,1.38,39.1223376,0.67,18.9941784,19.84670353
+Cosign,hi ,crevice,experimental ,hce3,1.27,36.0038904,0.63,17.8601976,18.1436928
+Cosign,hi ,crevice,experimental ,hce4,1.27,36.0038904,1.23,34.8699096,0.367940579
+Cosign,hi ,crevice,experimental ,hce5,1.32,37.4213664,1.31,37.1378712,-0.895130513
+Cosign,hi ,emergent,experimental ,hee1,1.31,37.1378712,1.34,37.9883568,-1.127633893
+Cosign,hi ,emergent,experimental ,hee2,1.52,43.0912704,1.16,32.8854432,10.2058272
+Cosign,hi ,emergent,experimental ,hee3,1.23,34.8699096,0.92,26.0815584,8.7883512
+Cosign,hi ,emergent,experimental ,hee4,1.38,39.1223376,0.92,26.0815584,13.0407792
+Cosign,hi ,emergent,experimental ,hee5,1.48,41.9572896,1.34,37.9883568,3.156856227
+Cosign,lo,pools,experimental ,lpe1,1.38,39.1223376,1.34,37.9883568,0.179777444
+Cosign,lo,pools,experimental ,lpe2,1.41,39.9728232,1.39,39.4058328,0.5669904
+Cosign,lo,pools,experimental ,lpe3,1.45,41.106804,0.74,20.9786448,8.83345671
+Cosign,lo,pools,experimental ,lpe4,1.4,39.689328,1.38,39.1223376,1.475906308
+Cosign,lo,pools,experimental ,lpe5,1.38,39.1223376,1.38,39.1223376,0.625957402
+Cosign,lo,crevice,experimental ,lce1,1.41,39.9728232,1.31,37.1378712,1.860005093
+Cosign,lo,crevice,experimental ,lce2,1.38,39.1223376,1.23,34.8699096,4.252428
+Cosign,lo,crevice,experimental ,lce3,1.38,39.1223376,1.16,32.8854432,6.2368944
+Cosign,lo,crevice,experimental ,lce4,1.33,37.7048616,1.23,34.8699096,2.834952
+Cosign,lo,crevice,experimental ,lce5,1.34,37.9883568,1.2,34.019424,1.649033148
+Cosign,lo,emergent,experimental ,lee1,1.31,37.1378712,1.34,37.9883568,-0.8504856
+Cosign,lo,emergent,experimental ,lee2,1.38,39.1223376,1.23,34.8699096,3.37655477
+Cosign,lo,emergent,experimental ,lee3,1.41,39.9728232,1.38,39.1223376,-0.308146957
+Cosign,lo,emergent,experimental ,lee4,1.38,39.1223376,1.38,39.1223376,-1.079236899
+Cosign,lo,emergent,experimental ,lee5,1.31,37.1378712,1.31,37.1378712,0.265270509
