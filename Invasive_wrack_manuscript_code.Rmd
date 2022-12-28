@@ -969,7 +969,7 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + th
 #############lets check the assumptions##############
 
 #normality
-#sargassum
+#sargassum in Invasive
 comm_sarg<-subset(comm, Algae_Spp.== "Sargassum")
 qqnorm(comm_sarg$Algae_Wd)
 qqline(comm_sarg$Algae_Wd)
@@ -1016,6 +1016,24 @@ NBS_Sub$Rep_No.<-as.factor(NBS_Sub$Rep_No.)
 NBS_Sub2 <- NBS_Sub[, c("Rep_No.","Wrack_treatment", "Algae_Spp.","Algae_Wd")]
 view(NBS_Sub2)
 str(NBS_Sub2) #ensure variables are numeric or factors
+
+#histograms for data with two factors
+
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Ulva",]$Algae_Wd, breaks = 20)
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Centroceras",]$Algae_Wd, breaks = 20)
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, breaks = 20)
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Ulva",]$Algae_Wd, breaks = 20)
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Centroceras",]$Algae_Wd, breaks = 20)
+hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, breaks = 20)
+
+#boxplot
+boxplot(Algae_Wd ~ Wrack_treatment * Algae_Spp., data = NBS_Sub2, xlab = "Wrack_treatment.Algae_Spp.", ylab = "Algae_Wd")
+
+with(NBS_Sub2, interaction.plot(Algae_Spp., Wrack_treatment, Algae_Wd, ylim = c(0,max(NBS_Sub2$Algae_Wd))))
+
+install.packages("fitdistrplus")
+library(fitdistrplus)
+fit = fitdist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, "pois", discrete=)
 
 #practice
 commmodel<-lme(Algae_Wd~Wrack_treatment*Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub2)
