@@ -696,7 +696,7 @@ anova(abmodel)
 #The interaction between the dependent variable and factor are not signficant(p=0.4179), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact abalone weight?"
 
 ## H0: There is no relationship between diet and abalone weights
-## HA: There is a relationship between diet and abalone weights
+## HA: There is a relationship between diet and abalone weights 
 abmodel <- aov(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = abmodels)
 Anova(abmodel, type = "III")
 #We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0311)
@@ -965,6 +965,11 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + 
 ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Wrack Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
+```
+
+## Model and assumptions
+
+```{r}
 
 #############lets check the assumptions##############
 
@@ -1031,19 +1036,22 @@ boxplot(Algae_Wd ~ Wrack_treatment * Algae_Spp., data = NBS_Sub2, xlab = "Wrack_
 
 with(NBS_Sub2, interaction.plot(Algae_Spp., Wrack_treatment, Algae_Wd, ylim = c(0,max(NBS_Sub2$Algae_Wd))))
 
-install.packages("fitdistrplus")
-library(fitdistrplus)
-fit = fitdist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, "pois", discrete=)
+
+
 
 #practice
-commmodel<-lme(Algae_Wd~Wrack_treatment*Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub2)
+commmodel<-lme(Algae_Wd~Algae_Spp.+ Wrack_treatment, random = ~1 | Rep_No., data = NBS_Sub2)
 summary(commmodel)
+anova(commmodel)
 coef(commmodel)
 plot(ranef(commmodel))
 plot(commmodel)
 
-# Fit the mixed effect model
-fit <- lmer(Algae_Wd ~ Algae_Spp. + (1 | Rep_No.), data = NBS_Sub)
+NBS_Sub2$Wrack_treatment <- factor(NBS_Sub2$Wrack_treatment, levels = c("Ulva", "Centroceras", "Silvetia"))
+NBS_Sub2$Wrack_treatment <- as.factor(NBS_Sub2$Wrack_treatment)
+
+tukey <- glht(commmodel, linfct = mcp(Wrack_treatment = "Tukey"))
+##need to get this to work fasf
 
 # Extract the residuals
 residuals <- resid(fit)
@@ -1119,10 +1127,7 @@ plot(NBSposthoc)
 # Wrack       1.2604175      b
 # Centroceras 0.4801150      c
 # Ulva        0.4767825      c
-
-
 ```
-
 # Figures for Manuscript
 
 ```{r}
