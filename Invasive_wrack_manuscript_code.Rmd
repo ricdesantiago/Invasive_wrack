@@ -951,8 +951,6 @@ view(comm)
 ## Exploring Data
 
 ```{r}
-
-#####visualize Data######
 #lets look at TOTAL consumption to see how that differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("Total Algae Consumed") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #Overall, the combined consumption of native benthic seaweeds + wrack appears to be lower in the S. horneri treatment
@@ -972,7 +970,6 @@ ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + th
 ```{r}
 
 #############lets check the assumptions##############
-
 #normality
 #sargassum in Invasive
 comm_sarg<-subset(comm, Algae_Spp.== "Sargassum")
@@ -1032,35 +1029,72 @@ hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Cen
 hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, breaks = 20)
 
 #boxplot
-boxplot(Algae_Wd ~ Wrack_treatment * Algae_Spp., data = NBS_Sub2, xlab = "Wrack_treatment.Algae_Spp.", ylab = "Algae_Wd")
+boxplot(Algae_Wd ~ Wrack_treatment * Algae_Spp., data = comm, xlab = "Wrack_treatment.Algae_Spp.", ylab = "Algae_Wd")
 
 with(NBS_Sub2, interaction.plot(Algae_Spp., Wrack_treatment, Algae_Wd, ylim = c(0,max(NBS_Sub2$Algae_Wd))))
 
+comm$logWd<-log10(comm$Algae_Wd)
+view(comm)
 
 
+#Create linear model
+#model 1 includes NBS and wrack species as "SH, MP"
+commmodel1<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp.,random = ~1 | Rep_No., data = comm)
+coef(commmodel1)
+plot(commmodel1)
+check_model(commmodel1)
 
-#practice
-commmodel<-lme(Algae_Wd~Algae_Spp.+ Wrack_treatment, random = ~1 | Rep_No., data = NBS_Sub2)
-summary(commmodel)
-anova(commmodel)
-coef(commmodel)
-plot(ranef(commmodel))
-plot(commmodel)
+#model 2 includes NBS and wrack species as "wrack"
+commmodel2<-lme(Algae_Wd~Wrack_treatment + Algae_trt, random = ~1 | Rep_No., data = comm)
+coef(commmodel2)
+plot(commmodel2)
+check_model(commmodel2)
 
-NBS_Sub2$Wrack_treatment <- factor(NBS_Sub2$Wrack_treatment, levels = c("Ulva", "Centroceras", "Silvetia"))
-NBS_Sub2$Wrack_treatment <- as.factor(NBS_Sub2$Wrack_treatment)
+#model 3
+commmodel3<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
+coef(commmodel3)
+plot(commmodel3)
+check_model(commmodel3)
 
-tukey <- glht(commmodel, linfct = mcp(Wrack_treatment = "Tukey"))
-##need to get this to work fasf
 
-# Extract the residuals
-residuals <- resid(fit)
+#variabilty likely caused by higher consumption of silvetia with and without a treatment effect. before proceeding with model 3 we will normalize and scale the data to compare variance. If variance is not different between seaweed treatments, we will proceed with Model 3
 
-# Plot the residuals
-plot(density(residuals))
+# Scale the values by category
+comm_scaled <- NBS_Sub2 %>% group_by(Algae_Spp.) %>% mutate(scaled_Wd= scale(Algae_Wd))
+view(comm_scaled) # Print out the scaled values
+#visualize boxplots for algae weight by species
+boxplot(scaled_Wd ~ Algae_Spp., data = comm_scaled, xlab = "Wrack_treatment.Algae_Spp.", ylab = "Algae_Wd")
+scale_test<-lm(scaled_Wd~Algae_Spp., data = comm_scaled) #create linear model to test if variability is zero
+#H0: there is no difference in the variability means between species
+#Ha: there is a difference in the variability means between species
+summary(scale_test)
+anova(scale_test)
+#fail to reject the null hypothesis, there is no difference in means. proceed with model 3 
 
-# Perform a Shapiro-Wilk test
-shapiro.test(residuals)
+#model 3
+commmodel3<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
+summary(commmodel3)
+anova(commmodel3)
+coef(commmodel3)
+plot(commmodel3)
+check_model(commmodel3)
+view(NBS_Sub)
+
+# First, install and load the lsmeans package
+install.packages("lsmeans")
+library(lsmeans)
+
+
+# Use the lsmeans() function to compute the least-squares means for each level of the treatment variable:
+treatment_means <- lsmeans(commmodel3, "Algae_Spp.")
+
+# Use the cld() function to conduct pairwise comparisons between the levels of the treatment variable:
+comparisons <- cld(treatment_means, alpha = 0.05)
+
+# View the results of the pairwise comparisons:
+comparisons
+
+#hello world 
 ```
 
 ## Wrack vs Native Benthic Seaweed Analyses
@@ -1128,6 +1162,7 @@ plot(NBSposthoc)
 # Centroceras 0.4801150      c
 # Ulva        0.4767825      c
 ```
+
 # Figures for Manuscript
 
 ```{r}
