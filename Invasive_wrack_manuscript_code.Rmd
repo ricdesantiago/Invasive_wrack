@@ -1094,7 +1094,7 @@ comparisons <- cld(treatment_means, alpha = 0.05)
 # View the results of the pairwise comparisons:
 comparisons
 
-#hello world 
+#hello world how are you?
 ```
 
 ## Wrack vs Native Benthic Seaweed Analyses
