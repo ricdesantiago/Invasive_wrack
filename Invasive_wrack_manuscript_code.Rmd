@@ -34,8 +34,8 @@ library(agricolae)
 library(glmm)
 library(HH)
 library(ggpubr)
+library(cran)
 library(rstatix)
-
 #hi
 ```
 
@@ -163,7 +163,7 @@ tegulachoice <- subset(tegula, trt == "exp")
 view(tegulachoice)
 
 #look at the data in boxplots to visualize the spread around the median
-tegbox<-ggplot(tegulachoice, aes(x=algae_spp., y=algae_Wd)) + geom_boxplot()
+tegbox<-ggplot(tegulachoice, aes(x=Location, y=Lo)) + geom_boxplot()
 tegbox
 
 #there seems to be an outlier in each treatment that may be pulling distributions, however, we are leaving outliers in as they are biological real.
@@ -944,7 +944,7 @@ rightingplot
 
 ```{r}
 community<-read.csv("Comm grazer exp.csv", header = T)
-comm<-subset(community, Treatment=="Exp")
+comm<-subset(community, Treatment=="Exp") #create a dataset for just the experimental treatments
 view(comm)
 ```
 
@@ -953,24 +953,17 @@ view(comm)
 ```{r}
 #lets look at TOTAL consumption to see how that differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("Total Algae Consumed") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
-#Overall, the combined consumption of native benthic seaweeds + wrack appears to be lower in the S. horneri treatment
+#Overall, the combined consumption of native benthic seaweeds + wrack appears to be generally lower in the invasive treatment but may not be significant
 
 #lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
 ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Native Benthic Seaweed Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
-#The  total biomass of native benthic seaweeds consumed appears to be higher in S. horneri treatment. Suggesting that consumption may have shifted onto NBS when S. horneri was introduced
+#The  total biomass of native benthic seaweeds consumed appears to be higher in invasive treatment. Suggesting that consumption may have shifted onto NBS when S. horneri was introduced
 
 #Now lets look at how consumption of just the WRACK species differs by Treatment
 ggplot(community, aes(x= Wrack_treatment , y= Total_Wrack_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("Total Wrack Consumed by Wrack Treatment") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 #consumption of S. horneri appears to be much lower than consumption of M. pyrifera 
 
-```
-
-## Model and assumptions
-
-```{r}
-
-#############lets check the assumptions##############
-#normality
+#lets look at the data of each species
 #sargassum in Invasive
 comm_sarg<-subset(comm, Algae_Spp.== "Sargassum")
 qqnorm(comm_sarg$Algae_Wd)
@@ -988,26 +981,20 @@ comm_ulva<-subset(comm, Algae_Spp.== "Ulva")
 qqnorm(comm_ulva$Algae_Wd)
 qqline(comm_ulva$Algae_Wd)
 hist(comm_ulva$Algae_Wd)
-shapiro_test(comm_ulva$Algae_Wd)
-comm_sil$Algae_Wd <- log(comm_ulva$Algae_Wd)
 
 #silvetia
 comm_sil<-subset(comm, Algae_Spp.== "Silvetia")
 qqnorm(comm_sil$Algae_Wd)
 qqline(comm_sil$Algae_Wd)
 hist(comm_sil$Algae_Wd)
-shapiro_test(comm_sil$Algae_Wd)
-comm_sil$Algae_Wd <- log(comm_sil$Algae_Wd)
 
 #centroceras
 comm_cen<-subset(comm, Algae_Spp.== "Centroceras")
 qqnorm(comm_cen$Algae_Wd)
 qqline(comm_cen$Algae_Wd)
 hist(comm_cen$Algae_Wd)
-shapiro_test(comm_cen$Algae_Wd)
-#log transform
-comm_cen$Algae_Wd <- log(comm_cen$Algae_Wd)
 
+#Since we ar comparing NBS consumption, we will subset those values
 #subset data the wrack treatments and only include NBS
 NBS_Sub<-subset(comm, Algae_trt != "Wrack")
 view(NBS_Sub)
@@ -1019,8 +1006,7 @@ NBS_Sub2 <- NBS_Sub[, c("Rep_No.","Wrack_treatment", "Algae_Spp.","Algae_Wd")]
 view(NBS_Sub2)
 str(NBS_Sub2) #ensure variables are numeric or factors
 
-#histograms for data with two factors
-
+#histograms for the data separated by treatment
 hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Ulva",]$Algae_Wd, breaks = 20)
 hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Centroceras",]$Algae_Wd, breaks = 20)
 hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Invasive" & NBS_Sub2$Algae_Spp. == "Silvetia",]$Algae_Wd, breaks = 20)
@@ -1031,11 +1017,14 @@ hist(NBS_Sub2[NBS_Sub2$Wrack_treatment == "Native" & NBS_Sub2$Algae_Spp. == "Sil
 #boxplot
 boxplot(Algae_Wd ~ Wrack_treatment * Algae_Spp., data = comm, xlab = "Wrack_treatment.Algae_Spp.", ylab = "Algae_Wd")
 
+#visualize potential interactrions
 with(NBS_Sub2, interaction.plot(Algae_Spp., Wrack_treatment, Algae_Wd, ylim = c(0,max(NBS_Sub2$Algae_Wd))))
 
-comm$logWd<-log10(comm$Algae_Wd)
-view(comm)
+```
 
+## Model and assumptions
+```{r}
+#############lets check the assumptions##############
 
 #Create linear model
 #model 1 includes NBS and wrack species as "SH, MP"
@@ -1049,13 +1038,13 @@ commmodel2<-lme(Algae_Wd~Wrack_treatment + Algae_trt, random = ~1 | Rep_No., dat
 coef(commmodel2)
 plot(commmodel2)
 check_model(commmodel2)
+install.packages("cran")
 
 #model 3
 commmodel3<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
 coef(commmodel3)
 plot(commmodel3)
 check_model(commmodel3)
-
 
 #variabilty likely caused by higher consumption of silvetia with and without a treatment effect. before proceeding with model 3 we will normalize and scale the data to compare variance. If variance is not different between seaweed treatments, we will proceed with Model 3
 
@@ -1071,30 +1060,6 @@ summary(scale_test)
 anova(scale_test)
 #fail to reject the null hypothesis, there is no difference in means. proceed with model 3 
 
-#model 3
-commmodel3<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
-summary(commmodel3)
-anova(commmodel3)
-coef(commmodel3)
-plot(commmodel3)
-check_model(commmodel3)
-view(NBS_Sub)
-
-# First, install and load the lsmeans package
-install.packages("lsmeans")
-library(lsmeans)
-
-
-# Use the lsmeans() function to compute the least-squares means for each level of the treatment variable:
-treatment_means <- lsmeans(commmodel3, "Algae_Spp.")
-
-# Use the cld() function to conduct pairwise comparisons between the levels of the treatment variable:
-comparisons <- cld(treatment_means, alpha = 0.05)
-
-# View the results of the pairwise comparisons:
-comparisons
-
-#hello world how are you?
 ```
 
 ## Wrack vs Native Benthic Seaweed Analyses
@@ -1114,7 +1079,6 @@ sd(community$Total_Algae_Consumed[community$Wrack_treatment== 'S'],na.rm = T)
 ## We fail to reject the null hypothesis (p-value = 0.215) 
 
 ggplot(community, aes(x = Wrack_treatment, y=Total_Algae_Consumed)) + geom_boxplot()
-
 
 #### now we test if consumption of WRACK differed. ie., is one wrack species less palatable than the other.?
 #H0: There is no difference in consumption between S. horneri and M. pyrifera 
@@ -1141,26 +1105,20 @@ scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_trt)) +  geom_jitter(aes(co
 scatter
 #In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S and the opposite for the wrack treatment
 
-   
-### If we want to understand how consumption changes by species, we can can change S. horneri and M. pyrifera to "wrack" and compare all seaweed species across Wrack treatment (Eg, Ulva, Silvetia, Centroceras, and Wrack by M and S). We should  expect to see a decrease in "wrack" and an increase in "silvetia."
+#Proceed with model 3
+commmodel3<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
 
-## lets look at this using ANOVA
-#H0: There is no difference in  seaweed consumption between Invasive (S) and Native (M) treatments
-#HA: There is a difference in  seaweed consumption between Invasive (S) and Native (M) treatments
-aov2<- aov(Algae_Wd ~ Algae_trt, data =community)
-summary(aov2)
+#Ho: There is no difference in consumption between wrack treatments
+#H1: There is a difference in consumption between wrack treatments 
+summary(commmodel3) 
+#we reject the null hypothesis and accept the alternative: Consumption differs between wrack treatment
 
-### We reject the null hypothesis and embrace the alternative, there is a difference in consumption of seaweeds
+#goodness of fit with and without random effect
+fitmod3<-lm(Algae_Wd~Wrack_treatment + Algae_Spp., data = NBS_Sub)
+summary(fitmod3)
+anova(commmodel3,fitmod3)
+# p value = 0.0323, thus, the LMEM is better than the null model without random effects.
 
-### now lets look how consumption differs using a post-hoc test 
-NBSposthoc <- HSD.test(aov2 , trt = 'Algae_trt') 
-print(NBSposthoc)
-plot(NBSposthoc)
-
-# Silvetia    3.3795300      a
-# Wrack       1.2604175      b
-# Centroceras 0.4801150      c
-# Ulva        0.4767825      c
 ```
 
 # Figures for Manuscript
@@ -1175,13 +1133,53 @@ fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_
         axis.title=element_text(size=10),plot.title =element_text(hjust = 0.5)) + 
   
   facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", "Tegula" = "T. funebralis", "Pachy" = "P. crassipes", "Pagurus" = "P. samuelis")),) +
-theme(strip.text = element_text(face = "italic")) +
+theme(strip.text = element_text(face = "italic")) + 
+  
+ 
   
   scale_x_discrete(limits = c("macro",  "sargassum"), labels=c("macro" = "M. pyrifera", "sargassum" = "S. horneri")) +
   theme(axis.text.x = element_text(face="italic", 
                            size=10))
   
 fig1
+
+
+# Define the order of factor levels for grazer_spp.
+order_grazer_spp <- c("T. funebralis", "P. crassipes", "P. samuelis", "H. cracherodii")
+
+# Define the order of factor levels for algae_spp.
+order_algae_spp <- c("M. pyrifera", "S. horneri")
+
+# Subset the data and convert the factor levels to the desired order
+choice <- subset(LabAssayWholeTissue, 1:232)
+choice$grazer_spp. <- factor(choice$grazer_spp., levels = order_grazer_spp)
+choice$algae_spp. <- factor(choice$algae_spp., levels = order_algae_spp)
+
+# Create the plot with reordered facet labels
+ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + 
+  geom_boxplot(show.legend = FALSE) + 
+  theme_bw()  + 
+  xlab("") + 
+  ylab("Algae Consumed (g)") + 
+  ggtitle("") + 
+  theme(axis.text=element_text(size=7),
+        axis.title=element_text(size=10),
+        plot.title =element_text(hjust = 0.5)) + 
+  facet_grid(grazer_spp. ~., 
+             scales = "free_y", 
+             labeller = as_labeller(c("Haliotis cracherodii" = "H. cracherodii", 
+                                       "Tegula" = "T. funebralis", 
+                                       "Pachy" = "P. crassipes", 
+                                       "Pagurus" = "P. samuelis")),
+             # Specify the order of the factor levels for grazer_spp.
+             levels = order_grazer_spp) + 
+  theme(strip.text = element_text(face = "italic")) + 
+  scale_x_discrete(limits = c("macro",  "sargassum"), 
+                   labels = c("macro" = "M. pyrifera", 
+                              "sargassum" = "S. horneri")) +
+  theme(axis.text.x = element_text(face="italic", 
+                                   size=10))
+
 
 #performance
 #this figure only shows final dry mass of non-shell tissue for tegula and red abalone. All other tissue will be in the appendix
