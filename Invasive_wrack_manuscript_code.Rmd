@@ -34,7 +34,6 @@ library(agricolae)
 library(glmm)
 library(HH)
 library(ggpubr)
-library(cran)
 library(rstatix)
 
 setwd("~/Documents/GitHub/Invasive_wrack")
@@ -648,6 +647,8 @@ ggplot(redabaloneperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) 
 
 
 
+
+
 ```
 
 ### Red Abalone Analysis
@@ -660,16 +661,16 @@ view(abmodels)
 
 #look at the data without starved treatment
 #histogram
-ggplot(abmodels, aes(x=terminal_total_dry_mass)) + geom_histogram(binwidth=01)
+ggplot(abmodels, aes(x=terminal_dry_tissue_mass)) + geom_histogram(binwidth=01)
 #when combined, the terminal dry masses show a left leaning distribution
  
 #before proceeding check that there is no correlation between estimated initial dry weights and proportional change
-reg<- plot(abmodels$est_total_dry_mass_i,abmodels$dry_mass_percent_change, frame = FALSE) +
-abline(lm(abmodels$dry_mass_percent_change ~ abmodels$est_total_dry_mass_i)) 
+reg<- plot(abmodels$est_tissue_dry_mass_i,abmodels$dry_mass_percent_change, frame = FALSE) +
+abline(lm(abmodels$dry_mass_percent_change ~ abmodels$est_tissue_dry_mass_i)) 
 
 #there seems to be a slight correlation between initial dry mass and percent change. Bigger individuals change less. Thus we will use initial weight estimates as a covariate to look at the effect of diet on size. By doing this, we account for initial weights but lose one degree of freedom
 
-abmodel <- lm(terminal_total_dry_mass ~ diet * est_total_dry_mass_i , data = abmodels)
+abmodel <- lm(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i , data = abmodels)
 summary(abmodel)
 # Create a QQ plot of residuals
 par(mfrow = c(2, 2))
@@ -680,15 +681,15 @@ plot(abmodel)
 shapiro_test(residuals(abmodel))
 #SW test fails to reject the Ho(p=0.594), the residuals are normally distributed
 
-bartlett.test(terminal_total_dry_mass ~ diet, data=abmodels)
-#Bartlett test fails to reject the null Ho (p-value =0.3937), thus we accept the hypothesis that our variances are equal
+bartlett.test(terminal_dry_tissue_mass ~ diet, data=abmodels)
+#Bartlett test fails to reject the null Ho (p-value =0.179), thus we accept the hypothesis that our variances are equal
 
 
 #Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
 
 #ANCOVA
 #first we test if there is an interaction between the initial weights and the diets
-int<-ggplot(abmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
+int<-ggplot(abmodels, aes(y=terminal_dry_tissue_mass , x= est_tissue_dry_mass_i)) 
 int +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
 #it looks like there could be an interaction when plotting
 
@@ -696,9 +697,9 @@ int +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F
 
 ## H0: There is no relationship between diet and abalone weights
 ## HA: There is a relationship between diet and abalone weights 
-abmodel <- aov(terminal_total_dry_mass ~ diet * est_total_dry_mass_i , data = abmodels)
+abmodel <- aov(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i , data = abmodels)
 Anova(abmodel, type = "II")
-#We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0317)
+#We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0006724)
 
 #check residuals
 par(mfrow = c(2,2))
@@ -709,6 +710,31 @@ redab.aov.HSD1 <- HSD.test(abmodel , trt = 'diet')
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
+
+
+
+#for reference, lets see how each diet treatment compares to starved
+
+# Create subsets based on categories
+abstarved <- subset(redabaloneperformance, diet == "starved")$terminal_dry_tissue_mass
+abkelp <- subset(redabaloneperformance, diet == "macro")$terminal_dry_tissue_mass
+absarg <- subset(redabaloneperformance, diet == "sargassum")$terminal_dry_tissue_mass
+abmixed <- subset(redabaloneperformance, diet == "mixed")$terminal_dry_tissue_mass
+
+# Perform two-sample t-test starved vs kelp
+kelpt <- t.test(abstarved, abkelp)
+# Print the result
+print(kelpt)
+
+# Perform two-sample t-test starved vs sargassum
+sargt <- t.test(abstarved, absarg)
+# Print the result
+print(sargt)
+
+# Perform two-sample t-test starved vs sargassum
+mixedt <- t.test(abstarved, abmixed)
+# Print the result
+print(mixedt)
 ```
 
 ## Tegula (Data Exploration)
@@ -839,7 +865,7 @@ ggplot(tegmodels, aes(x=terminal_total_dry_mass)) + geom_histogram(binwidth=0.01
 
 # Build the linear model to test normality of residuals
 # The model will look at 
-Tegmodel <- lm(terminal_total_dry_mass ~ diet + est_total_dry_mass_i , data = tegmodels)
+Tegmodel <- lm(terminal_dry_tissue_mass ~ diet + est_tissue_dry_mass_i , data = tegmodels)
 # Create a QQ plot of residuals
 ggqqplot(residuals(Tegmodel))
 #the data look normal but deviate toward the right end of the QQ plot. May need to address outliers
@@ -849,29 +875,29 @@ plot(Tegmodel)
 #the data look fairly normal
 
 #test the homogeniety of variances 
-bartlett.test(terminal_total_dry_mass ~ diet , data=tegmodels)
-#Bartlet test fails to reject the null Ho (p-value =0.8136), thus we accept the hypothesis that our variances are equal
+bartlett.test(terminal_dry_tissue_mass ~ diet , data=tegmodels)
+#Bartlet test fails to reject the null Ho (p-value =0.7006), thus we accept the hypothesis that our variances are equal
 
 
 #Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
 
 #ANCOVA
 #first we test if there is an interaction between the initial weights and the diets
-int2<-ggplot(tegmodels, aes(y=terminal_total_dry_mass , x= est_total_dry_mass_i)) 
+int2<-ggplot(tegmodels, aes(y=terminal_dry_tissue_mass , x= est_tissue_dry_mass_i)) 
  
 int2 +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
 
-tegmodel <- lm(terminal_total_dry_mass ~ est_total_dry_mass_i * diet , data = tegmodels)
+tegmodel <- lm(terminal_dry_tissue_mass ~ est_tissue_dry_mass_i * diet , data = tegmodels)
 anova(tegmodel)
-#There is no interaction between the dependent variable and factor (p=0.5118), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact tegula weight?"
+#There is no interaction between the dependent variable and factor (p=0.60284), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact tegula weight?"
 
 ## H0: There is no relationship between diet and tegula weights
 ## HA: There is a relationship between diet and tegula weights
-tegmodel2 <- aov(terminal_total_dry_mass ~ diet * est_total_dry_mass_i  , data = tegmodels)
+tegmodel2 <- aov(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i  , data = tegmodels)
 Anova(tegmodel2, type = "II") 
 summary(tegmodel2)
 
-#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0141)
+#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0253)
  
 #check residuals
 par(mfrow = c(2,2))
@@ -882,6 +908,30 @@ redab.aov.HSD1 <- HSD.test(tegmodel2 , trt = 'diet')
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
+
+
+#for reference, lets see how each diet treatment compares to starved
+
+# Create subsets based on categories
+tegstarved <- subset(tegulaperformance, diet == "starved")$terminal_dry_tissue_mass
+tegkelp <- subset(tegulaperformance, diet == "macro")$terminal_dry_tissue_mass
+tegsarg <- subset(tegulaperformance, diet == "sargassum")$terminal_dry_tissue_mass
+tegmixed <- subset(tegulaperformance, diet == "mixed")$terminal_total_dry_mass
+
+# Perform two-sample t-test starved vs kelp
+tegkelpt <- t.test(tegstarved, tegkelp)
+# Print the result
+print(tegkelpt)
+
+# Perform two-sample t-test starved vs sargassum
+tegsargt <- t.test(tegstarved, tegsarg)
+# Print the result
+print(tegsargt)
+
+# Perform two-sample t-test starved vs sargassum
+tegmixedt <- t.test(tegstarved, tegmixed)
+# Print the result
+print(tegmixedt)
 ```
 
 ## Righting times
@@ -904,7 +954,7 @@ qqnorm(righting.tests$righting_time_2)
 qqline(righting.tests$righting_time_2)
 
 #make a model 
-rightingmodel <- aov(righting_time_2 ~ diet * righting_time_1 , data = righting.tests)
+rightingmodel <- aov(righting_time_2 ~ diet + righting_time_1 , data = righting.tests)
 
 #hmogeneity of variances:
 plot(fitted(rightingmodel), residuals(rightingmodel))
@@ -1146,7 +1196,7 @@ choice <- LabAssayWholeTissue[1:232,]
 order_grazer_spp <- c("Haliotis cracherodii", "Tegula", "Pachy", "Pagurus")
 choice$grazer_spp. <- factor(choice$grazer_spp., levels = order_grazer_spp)
 
-fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE) + theme_bw()  + xlab("") + ylab("Algae Consumed (g)") + ggtitle("") + theme(axis.text=element_text(size=7),
+fig1<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE) + theme_bw()  + xlab("") + ylab("Seaweed Consumed (g)") + ggtitle("") + theme(axis.text=element_text(size=7),
         axis.title=element_text(size=10),plot.title =element_text(hjust = 0.5)) + 
   scale_fill_manual(values =  c("#56B4E9","#E69F00")) +
   
@@ -1167,8 +1217,9 @@ p1 <- ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + the
 p2 <- ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("") + ylab("Total Consumption(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
 
 
-fig2 <-grid.arrange(p1, p2, ncol = 2)
+fig1.5 <-grid.arrange(p1, p2, ncol = 2)
 #lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
+
 
 fig2<- ggplot(performance, aes(x=diet, y= terminal_dry_tissue_mass, fill= diet)) + 
   geom_boxplot(show.legend = FALSE) + theme_bw() + 
