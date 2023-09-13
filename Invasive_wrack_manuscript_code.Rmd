@@ -36,6 +36,7 @@ library(HH)
 library(ggpubr)
 library(rstatix)
 library(emmeans)
+library(performance)
 
 
 setwd("~/Documents/GitHub/Invasive_wrack")
@@ -403,7 +404,7 @@ t.test(abdiffs2$algae_Wd, mu=0, alternative = "two.sided", conf.level = 0.95)
 #make boxplot 
 ggplot(abalonechoice, aes(x=algae_spp., y=algae_Wd, fill= algae_spp.))+ geom_boxplot() + theme_bw()  + guides() + xlab("Algae Species") + ylab(" Consumtion (g)") + ggtitle("M. pyrifera vs. S. horneri whole tissue consumption by H. cracherodii ") + theme(plot.title =element_text(hjust = 0.5)) 
 
-#When given a choice between S. horneri and M. pyrifera, H. cracherodii showed a preference for M. pyriferae.
+#When given a choice between S. horneri and M. pyrifera, H. cracherodii showed a preference for M. pyrifera.
 
 ```
 
@@ -426,6 +427,32 @@ performance<-mutate(performance, dry_mass_percent_change = ((terminal_total_dry_
 view(performance)
 
 ggplot(performance, aes(y=dry_mass_percent_change, x=diet)) + geom_boxplot()
+
+# Fit a mixed-effects model with interaction between diet and detritivore species
+x<- lmer(terminal_dry_tissue_mass ~ diet * grazer_spp. + (1 | est_tissue_dry_mass_i), data = performance)
+
+# Run an ANOVA on the interaction model
+anova(x, type = "III")
+
+
+# Run post hoc tests for diet and species interactions
+posthoc_diet <- emmeans(model, pairwise ~ diet, adjust = "tukey")
+posthoc_species <- emmeans(model, pairwise ~ grazer_spp., adjust = "tukey")
+
+# Summarize the post hoc test results
+summary(posthoc_diet)
+summary(posthoc_species)
+
+#run model diognostics
+check_model(x)
+
+#There is a significant interaction between diet and detritivore species, I think these needs to be looked at seperately. 
+
+perfint<-ggplot(performance, aes(y=terminal_dry_tissue_mass , x= diet)) 
+perfint +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
+
+# terminal mass is so different, all abalone are much heavier than turban snails. 
+
 
 ```
 
@@ -616,20 +643,13 @@ shapiro_test(residuals(abmodel))
 bartlett.test(terminal_dry_tissue_mass ~ diet, data=abmodels)
 #Bartlett test fails to reject the null Ho (p-value =0.179), thus we accept the hypothesis that our variances are equal
 
+#Assumptions for ANOVA are met, we can now run the analysis to answer the question:
 
-#Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
-
-#ANCOVA
-#first we test if there is an interaction between the initial weights and the diets
-int<-ggplot(abmodels, aes(y=terminal_dry_tissue_mass , x= est_tissue_dry_mass_i)) 
-int +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
-#it looks like there could be an interaction when plotting
-
-#lets use a type II ANCOVA, a main effects model with type II sum of squares which reflects the unique contribution of each variable after adjusting for all other variables. This can adjust the effect of starting weight and let us focus on diet effects.
+#lets use a type II ANOVA, a main effects model with type II sum of squares which reflects the unique contribution of each variable after adjusting for all other variables. This can adjust the effect of starting weight and let us focus on diet effects.
 
 ## H0: There is no relationship between diet and abalone weights
 ## HA: There is a relationship between diet and abalone weights 
-abmodel <- aov(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i , data = abmodels)
+abmodel <- aov(terminal_dry_tissue_mass ~ diet + est_tissue_dry_mass_i , data = abmodels)
 Anova(abmodel, type = "II")
 #We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0006724)
 
@@ -642,7 +662,6 @@ redab.aov.HSD1 <- HSD.test(abmodel , trt = 'diet')
 print(redab.aov.HSD1)
 plot(redab.aov.HSD1)
 #all treatments differ from each other
-
 
 
 #for reference, lets see how each diet treatment compares to starved
@@ -663,10 +682,12 @@ sargt <- t.test(abstarved, absarg)
 # Print the result
 print(sargt)
 
-# Perform two-sample t-test starved vs sargassum
+# Perform two-sample t-test starved vs mixed
 mixedt <- t.test(abstarved, abmixed)
 # Print the result
 print(mixedt)
+
+
 ```
 
 ## Tegula (Data Exploration)
@@ -687,7 +708,7 @@ ggplot(tegulaperformance, aes(x=terminal_dry_tissue_mass)) + geom_histogram()
 ggplot(tegulaperformance, aes(x=diet, y=wetmass_i , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Wet Mass (g)") + ggtitle("T. funebralis initial wet mass") + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot of final wet mass
-ggplot(tegulaperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Wet Mass (g)") + ggtitle("T. funebralisfinal wet mass by diet") + theme(plot.title =element_text(hjust = 0.5))
+ggplot(tegulaperformance, aes(x=diet, y=wetmass_f , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis Wet Mass (g)") + ggtitle("T. funebralis final wet mass by diet") + theme(plot.title =element_text(hjust = 0.5))
 
 #make boxplot for mass difference
 ggplot(tegulaperformance, aes(x=diet, y=wetmass_total_Wd , fill= diet)) + geom_boxplot() + theme_bw()   + xlab("Diet") + ylab("T. funebralis change in wet Mass (g)") + ggtitle("T. funebralis mass change by diet") + theme(plot.title =element_text(hjust = 0.5))
@@ -874,49 +895,27 @@ view(righting)
 na.omit(righting)
 
 #subset out starved
-righting.tests<-subset(righting, !diet== "starved")
-view(righting.tests) #subset out the starved treatment
-
+righting<-subset(righting, !diet== "starved") 
+#subset out the abalone that times out (per Wendi, abalone at 240 exactly were those who timed out)
+righting.tests <- subset(righting, righting_time_2 != 240)
 
 # Histogram
-hist(righting.tests$righting_time_2)
+hist(righting.tests$time_diff)
 
 # Q-Q plot
-qqnorm(righting.tests$righting_time_2)
-qqline(righting.tests$righting_time_2)
+qqnorm(righting.tests$time_diff)
+qqline(righting.tests$time_diff)
 
 #make a model 
-rightingmodel <- aov(righting_time_2 ~ diet + righting_time_1 , data = righting.tests)
+rightingmodel <- lme(righting_time_2 - righting_time_1 ~ diet, random = ~1| animal_label, data = righting.tests)
+#this model looks at the difference in righting time by diet and accounts for within subject variability. that is, slow performers and fast performers are accounted for.
+
+anova(rightingmodel)
+#check model assumptions
+check_model(rightingmodel)
+#assumptions are met
 
 
-
-#hmogeneity of variances:
-plot(fitted(rightingmodel), residuals(rightingmodel))
-abline(h = 0, lty = 2)
-
-# Interpret the ANCOVA results
-summary(rightingmodel)
-summary(rightingmodel, type = "II")
-
-righting.aov.HSD1 <- HSD.test(rightingmodel , trt = 'diet') 
-print(righting.aov.HSD1)
-plot(righting.aov.HSD1)
-
-## Perform pairwise comparison using t-tests
-pairwise_results <- pairwise.t.test(bar$mean_time, bar$diet,
-                                   paired = TRUE,
-                                   p.adjust.method = "bonferroni")
-
-# Extract the results
-pairwise_comparison <- data.frame(pairwise_results$p.value)
-rownames(pairwise_comparison) <- levels(bar$diet)
-colnames(pairwise_comparison) <- c("righting_time_1 - righting_time_2")
-
-# Display the pairwise comparison results
-print(pairwise_comparison)
-
-
-# no significance despite the visible pattern 
 
 
 ```
@@ -1028,7 +1027,7 @@ plot(commmodel3)
 check_model(commmodel3)
 
 
-#variabilty likely caused by higher consumption of silvetia with and without a treatment effect. before proceeding with model 3 we will normalize and scale the data to compare variance. If variance is not different between seaweed treatments, we will proceed with Model 3
+#variability likely caused by higher consumption of silvetia with and without a treatment effect. before proceeding with model 3 we will normalize and scale the data to compare variance. If variance is not different between seaweed treatments, we will proceed with Model 3
 
 # Scale the values by category
 comm_scaled <- NBS_Sub2 %>% group_by(Algae_Spp.) %>% mutate(scaled_Wd= scale(Algae_Wd))
@@ -1115,8 +1114,8 @@ scatter
 
 # Fit the linear mixed-effects model with interation factor
 commmodel<-lme(Algae_Wd~Wrack_treatment * Algae_trt, random = ~1 | Rep_No., data = comm)
-Anova(commmodel)
-summary(commmodel, type = "III")
+anova(commmodel)
+summary(commmodel)
 
 #remove the interaction
 commmodelnoI<-lme(Algae_Wd~Wrack_treatment + Algae_trt, random = ~1 | Rep_No., data = comm)
@@ -1150,13 +1149,12 @@ perf_fig <- ggplot(performance, aes(x = diet, y = terminal_dry_tissue_mass, fill
   ylab("Final dry tissue mass (g)") +
   ggtitle("") +
   theme(
-    axis.text = element_text(size = 12, color = "black"),
-    axis.title = element_text(size = 12, color = "black"),
+    axis.text = element_text(size = 10, color = "black"),
+    axis.title = element_text(size = 18, color = "black"),
     plot.title = element_text(hjust = 0.5, color = "black"),
     axis.text.x = element_text(size = 12, color = "black"),
-    strip.text = element_text(size = 12, color = "black")
-  ) +
-  facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "Red abalone", "tegula" = "Turban snails"))) +
+    strip.background = element_blank() ) +
+  facet_grid(grazer_spp. ~ ., scales = "free_y") +
   scale_x_discrete(
     limits = c("starved", "macro", "mixed", "sargassum"),
     labels = c("starved" = "starved", "macro" = "kelp", "mixed" = "mixed", "sargassum" = "devilweed")
@@ -1166,6 +1164,7 @@ perf_fig <- ggplot(performance, aes(x = diet, y = terminal_dry_tissue_mass, fill
 
 perf_fig
 
+esquisse::esquisser()
 
 
 #same graph in color
@@ -1186,8 +1185,7 @@ perf_fig_color <- ggplot(performance, aes(x=diet, y=terminal_dry_tissue_mass, fi
   facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "Red abalone", "tegula" = "Turban snails"))) +
   scale_x_discrete(
     limits = c("starved", "macro", "mixed", "sargassum"),
-    labels = c("starved" = "Starved", "macro" = "Kelp", "mixed" = "Mixed", "sargassum" = "Devilweed")
-  ) +
+    labels = c("starved" = "Starved", "macro" = "Kelp", "mixed" = "Mixed", "sargassum" = "Devilweed") ) +
   geom_vline(xintercept = c(1.5), linetype = "dotted")
 
 perf_fig_color
