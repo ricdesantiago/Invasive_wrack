@@ -12,7 +12,7 @@ editor_options:
 
 # Libraries
 
-```{r libraries}
+```{r}
 library(knitr)
 library(jtools)
 library(tidyverse)
@@ -116,6 +116,7 @@ tegdiffs3<-subset(tegdiffs, algae_spp. == "macro")
 view(tegdiffs3)
 #Bind the two datasets in "wide form"
 tegdiffs4<- bind_cols(tegdiffs2,tegdiffs3)
+
 view(tegdiffs4)
 #create new column with the differences by subtracting S. horneri consumed from M. pyrifera consumed
 tegdiffs5<- mutate(tegdiffs4, diffs = algae_Wd...4 - algae_Wd...2) 
@@ -432,7 +433,7 @@ ggplot(performance, aes(y=dry_mass_percent_change, x=diet)) + geom_boxplot()
 x<- lmer(terminal_dry_tissue_mass ~ diet * grazer_spp. + (1 | est_tissue_dry_mass_i), data = performance)
 
 # Run an ANOVA on the interaction model
-anova(x, type = "III")
+anova(x)
 
 
 # Run post hoc tests for diet and species interactions
@@ -451,7 +452,7 @@ check_model(x)
 perfint<-ggplot(performance, aes(y=terminal_dry_tissue_mass , x= diet)) 
 perfint +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
 
-# terminal mass is so different, all abalone are much heavier than turban snails. 
+
 
 
 ```
@@ -1014,6 +1015,7 @@ coef(commmodel1)
 plot(commmodel1)
 check_model(commmodel1)
 
+
 #model 2 excludes wrack all together
 commmodel2<-lme(Algae_Wd~ Wrack_treatment + Algae_Spp., random = ~1 | Rep_No., data = NBS_Sub)
 coef(commmodel2)
@@ -1046,11 +1048,18 @@ anova(scale_test)
 ## Wrack vs Native Benthic Seaweed Analyses
 
 ```{r}
+#### lets test if consumption of WRACK differed. ie., is one wrack species less palatable than the other.?
+#H0: There is no difference in consumption between S. horneri and M. pyrifera 
+#HA: There is a difference in  consumption between S. horneri and M. pyrifera 
+t.test(comm$Total_Wrack_Algae_Consumed~comm$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+##we reject the null hypothesis and embrace the alternative, there was a difference in consumption between wrack species. Consumption of M. pyrifera was significantly higher (p=3.457e-08)
+ggplot(comm, aes(x = Wrack_treatment, y=Total_Wrack_Algae_Consumed)) + geom_boxplot()
 
 #lets see if total consumption of ALL Seaweeds differed by wrack treatment using a T-test
 #H0: There is no difference in total consumption between S. horneri and M. pyrifera treatments
 #HA: There is a difference in total consumption between S. horneri and M. pyrifera treatments
 t.test(comm$Total_Algae_Consumed~comm$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+#fail to reject (p=0.215)
 
 #lets look at means and standard errors
 #native
@@ -1064,7 +1073,7 @@ NBS_Native_se_value <- NBS_N_sd_value / sqrt(NBS_N_sample_size)
 # Print the standard error
 print(NBS_Native_se_value)
 mean(comm$Total_Algae_Consumed[comm$Wrack_treatment== 'Native'],na.rm = T)
-sd(comm$Total_Algae_Consumed[comm$Wrack_treatment== 'Native'],na.rm = T)
+
 
 #invasive
 
@@ -1078,59 +1087,21 @@ NBS_Invasive_se_value <- NBS_I_sd_value / sqrt(NBS_I_sample_size)
 # Print the standard error
 print(NBS_Invasive_se_value)
 mean(comm$Total_Algae_Consumed[comm$Wrack_treatment== 'Invasive'],na.rm = T)
-sd(comm$Total_Algae_Consumed[comm$Wrack_treatment== 'Invasive'],na.rm = T)
-
-ggplot(comm, aes(x = Wrack_treatment, y=Total_Algae_Consumed)) + geom_boxplot()
 
 
-#### now we test if consumption of WRACK differed. ie., is one wrack species less palatable than the other.?
-#H0: There is no difference in consumption between S. horneri and M. pyrifera 
-#HA: There is a difference in  consumption between S. horneri and M. pyrifera 
-t.test(comm$Total_Wrack_Algae_Consumed~comm$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
-##we reject the null hypothesis and embrace the alternative, there was a difference in consumption between wrack species. Consumption of M. pyrifera was significantly higher (p=3.457e-08)
-ggplot(comm, aes(x = Wrack_treatment, y=Total_Wrack_Algae_Consumed)) + geom_boxplot()
-
-
-#lets see if total consumption of NBS  differed by wrack treatment using a T-test
-#H0: There is no difference in total NBS consumption between S. horneri and M. pyrifera treatments
-#HA: There is a difference in total NBS consumption between S. horneri and M. pyrifera treatments
-t.test(comm$Total_Benthic_Algae_Consumed~comm$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
-
-ggplot(comm, aes(x = Wrack_treatment, y=Total_Benthic_Algae_Consumed)) + geom_boxplot()
-
-mean(comm$Total_Benthic_Algae_Consumed[comm$Wrack_treatment== 'Native'],na.rm = T)
-sd(comm$Total_Benthic_Algae_Consumed[comm$Wrack_treatment== 'Native'],na.rm = T)
-
-mean(comm$Total_Benthic_Algae_Consumed[comm$Wrack_treatment== 'Invasive'],na.rm = T)
-sd(comm$Total_Benthic_Algae_Consumed[comm$Wrack_treatment== 'Invasive'],na.rm = T)
-## We fail to reject the null hypothesis (p-value = 0.0697). While total consumption is not different between NBS, we still want to know if lower palatability of S. horneri causes a shift of consumption onto Native Benthic Seaweeds (NBS)
-##(NBS= Algae_Spp. - M. pyrifera and S. horneri) consumption.##
-
-#look at an scatterplot
-scatter<-ggplot(community, aes(y=Algae_Wd , x= Algae_trt)) +  geom_jitter(aes(col=Wrack_treatment)) + geom_smooth(aes(col=Algae_Spp.), method="lm", se=F)
-scatter
-#In general, we see that consumption tends to be clustered equally for Ulva and Centroceras but there is a vertical shift in Silvetia consumption when going from M to S and the opposite for the wrack treatment
-
+#test for interaction
+comm_interaction<-aov(Algae_Wd~Wrack_treatment * Algae_trt, data = comm)
+summary(comm_interaction)
 
 # Fit the linear mixed-effects model with interation factor
-commmodel<-lme(Algae_Wd~Wrack_treatment * Algae_trt, random = ~1 | Rep_No., data = comm)
-anova(commmodel)
+commmodel<-lmer(Algae_Wd~Wrack_treatment * Algae_trt + (1 | Rep_No.), data = comm)
 summary(commmodel)
 
-#remove the interaction
-commmodelnoI<-lme(Algae_Wd~Wrack_treatment + Algae_trt, random = ~1 | Rep_No., data = comm)
-summary(commmodelnoI)
-#interacrtion 
 
-#unecessary but i want to look at pairwise comparissons.
-# Create the emmGrid object for post-hoc tests
-emm <- emmeans(commmodel, ~ Wrack_treatment * Algae_trt)
+#  post hoc pairwise comparisons 
+commmodel_results <- lsmeans(commmodel, pairwise ~ Algae_trt:Wrack_treatment)
 
-# Perform pairwise comparisons of the interaction
-pairwise <- pairs(emm, interaction = TRUE)
-
-# Summarize the pairwise comparisons
-summary(pairwise)
+print(commmodel_results)
 
 ```
 
@@ -1140,71 +1111,35 @@ summary(pairwise)
 #Figure 1 performance
 
 perf_fig <- ggplot(performance, aes(x = diet, y = terminal_dry_tissue_mass, fill = diet)) +
-  geom_boxplot(show.legend = FALSE) +
-  scale_fill_manual(
-    values = c("starved" = "white", "macro" = "white", "mixed" = "white", "sargassum" = "white")
-  ) +
-  theme_bw() +
-  xlab("Diet") +
-  ylab("Final dry tissue mass (g)") +
-  ggtitle("") +
-  theme(
-    axis.text = element_text(size = 10, color = "black"),
-    axis.title = element_text(size = 18, color = "black"),
-    plot.title = element_text(hjust = 0.5, color = "black"),
-    axis.text.x = element_text(size = 12, color = "black"),
-    strip.background = element_blank() ) +
+  geom_boxplot(show.legend = FALSE) + scale_fill_manual( values = c("starved" = "white", "macro" = "white", "mixed" = "white", "sargassum" = "white") ) + theme_bw() + xlab("Diet") +
+  ylab("Final dry tissue mass (g)") + 
+  ggtitle("") + 
+  theme( axis.text = element_text(size = 10, color ="black"), 
+         axis.title = element_text(size = 18, color = "black"), 
+         plot.title = element_text(hjust = 0.5, color = "black"), 
+         axis.text.x = element_text(size = 12, color = "black"), 
+         strip.background = element_blank() ) + 
   facet_grid(grazer_spp. ~ ., scales = "free_y") +
-  scale_x_discrete(
-    limits = c("starved", "macro", "mixed", "sargassum"),
-    labels = c("starved" = "starved", "macro" = "kelp", "mixed" = "mixed", "sargassum" = "devilweed")
-  ) +
+  scale_x_discrete( limits = c("starved", "macro", "mixed", "sargassum"), labels = c("starved" = "starved", "macro" = "kelp", "mixed" = "mixed", "sargassum" = "devilweed") ) + 
   geom_vline(xintercept = c(1.5), linetype = "dotted")
-
 
 perf_fig
 
-esquisse::esquisser()
 
+#Figure 2 righting #make bargraph
+righting<-read.csv("abalone righting tests.csv", header=TRUE)
+view(righting)
+na.omit(righting)
 
-#same graph in color
-perf_fig_color <- ggplot(performance, aes(x=diet, y=terminal_dry_tissue_mass, fill=diet)) + 
-  geom_boxplot(show.legend=FALSE) +
-  scale_fill_manual(values=c("starved"="lightskyblue1", "macro"="olivedrab4", "mixed"="hotpink3", "sargassum"="orange3")) +
-  theme_bw() + 
-  xlab("Diet") + 
-  ylab("Final dry tissue mass (g)") + 
-  ggtitle("") + 
-  theme(
-    axis.text = element_text(size=12),
-    axis.title = element_text(size=12),
-    plot.title = element_text(hjust = 0.5),
-    axis.text.x = element_text(size=10),
-    strip.text = element_text()
-  ) +
-  facet_grid(grazer_spp. ~ ., scales = "free_y", labeller = as_labeller(c("red abalone" = "Red abalone", "tegula" = "Turban snails"))) +
-  scale_x_discrete(
-    limits = c("starved", "macro", "mixed", "sargassum"),
-    labels = c("starved" = "Starved", "macro" = "Kelp", "mixed" = "Mixed", "sargassum" = "Devilweed") ) +
-  geom_vline(xintercept = c(1.5), linetype = "dotted")
+#subset out the abalone that times out (per Wendi, abalone at 240 exactly were those who timed out)
+righting.tests <- subset(righting, righting_time_2 != 240)
 
-perf_fig_color
-
-
-
-
-#Figure 2 righting
-#make bargraph
-
-righting_long <- gather(righting, key = "trial", value = "time", c("righting_time_1", "righting_time_2"), factor_key = TRUE)
+righting_long <- gather(righting, key = "trial", value = "time", c("righting_time_1", "righting_time_2"), factor_key = TRUE) 
 view(righting_long)
 
-
-bar <- righting_long %>% 
-  group_by(diet, trial) %>% 
-  summarize(mean_time = mean(time), se = sd(time)/sqrt(20))
+bar <- righting_long %>% group_by(diet, trial) %>% 
+  summarize(mean_time = mean(time), se = sd(time)/sqrt(20)) 
 view(bar)
-
 
 rightingfig <- ggplot(bar, aes(x = diet, y = mean_time, fill = trial)) +
   xlab("") + ylab("Time (sec)") + ggtitle("") +
@@ -1212,77 +1147,73 @@ rightingfig <- ggplot(bar, aes(x = diet, y = mean_time, fill = trial)) +
   theme_minimal() +
   scale_x_discrete(limits = c("starved", "macro", "mixed", "sargassum"),
                    labels = c("starved", "kelp", "mixed", "devilweed")) +
-  theme(axis.text = element_text(size = 12),
-        axis.text.x = element_text(size = 12, color =  "black")) + 
+  theme(
+    axis.text = element_text(size = 12),
+    axis.text.x = element_text(size = 12, color = "black"),
+    axis.title.y = element_text(size = 14)  
+  ) +
   geom_vline(xintercept = c(1.5), linetype = "dotted") +
   scale_fill_manual("", values = c("righting_time_1" = "gray60", "righting_time_2" = "gray"),
                     labels = c("righting_time_1" = "Initial", "righting_time_2" = "Final")) +
   geom_errorbar(aes(x = diet, ymin = mean_time - se, ymax = mean_time + se), width = 0.2, position = position_dodge(.9)) +
-  theme(legend.title = element_blank(),
-        panel.border = element_rect(color = "black", fill = NA, size = 0.5))
+  theme(
+    legend.position = "bottom",  
+    legend.title = element_text(size = 12), 
+    legend.text = element_text(size = 12),  
+    legend.key.size = unit(0.5, "cm")  
+  ) +
+  theme(panel.border = element_rect(color = "black", fill = NA, size = 0.5))
 
-# Display the plot
-print(rightingfig)
+rightingfig
 
 
-
-
-#Figure 3 choice
-LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T)
-View(LabAssayWholeTissue)
+#Figure 3 choice 
+LabAssayWholeTissue <- read.csv("LabAssaysWholeTissue.csv",header=T) 
+View(LabAssayWholeTissue) 
 choice <- LabAssayWholeTissue[1:232,]
 
-# Define the order of factor levels for grazer_spp.
-order_grazer_spp <- c("Haliotis cracherodii", "Tegula", "Pachy", "Pagurus")
+#Define the order of factor levels for grazer_spp.
+
+order_grazer_spp <- c("Haliotis cracherodii", "Tegula", "Pachy", "Pagurus") 
 choice$grazer_spp. <- factor(choice$grazer_spp., levels = order_grazer_spp)
 
-fig3<- ggplot(choice, aes(x=algae_spp., y= algae_Wd, fill = algae_spp.)) + geom_boxplot(show.legend = FALSE, lwd = 0.5) + theme_bw()  + xlab("") + ylab("Seaweed consumed (g)") + ggtitle("") + theme(axis.text=element_text(size=10),
-        axis.title=element_text(size=12),plot.title =element_text(hjust = 0.5)) + 
-  scale_fill_manual(values =  c("white","white")) +
-  
-  facet_grid(grazer_spp. ~., scales = "free_y", labeller = as_labeller(c("Haliotis cracherodii" = "Black abalone", "Tegula" = "Turban snails", "Pachy" = "Shore crabs", "Pagurus" = "Hermit crabs")),) +
-theme(strip.text = element_text( size = 12)) + 
-  
-  scale_x_discrete(limits = c("macro",  "sargassum"), labels=c("macro" = "kelp", "sargassum" = "devilweed")) +
-  theme(axis.text.x = element_text( 
-                           size=12, color = "black")) 
+fig3 <- ggplot(choice, aes(x = algae_spp., y = algae_Wd, fill = algae_spp.)) + 
+  geom_boxplot(show.legend = FALSE, lwd = 0.5) + theme_bw() + 
+  xlab("") + ylab("Seaweed consumed (g)") + ggtitle("") + 
+  theme( axis.text = element_text(size = 10), 
+         axis.title = element_text(size = 16), 
+         plot.title = element_text(hjust = 0.5) ) + 
+  scale_fill_manual(values = c("white", "white")) + 
+  facet_grid(grazer_spp. ~ ., scales = "free_y", 
+             labeller = as_labeller(c("Haliotis cracherodii" = "Black abalone", "Tegula" = "Turban snails", "Pachy" = "Shore crabs", "Pagurus" = "Hermit crabs"))) + 
+  theme( strip.text = element_text(size = 12), strip.text.y = element_blank()) +
+  scale_x_discrete(limits = c("macro", "sargassum"), 
+                   labels = c("macro" = "kelp", "sargassum" = "devilweed")) + 
+  theme(axis.text.x = element_text(size = 12, color = "black"))
 
 fig3
 
 
-#not going in the manuscript afterall
-#TOTAL consumption of seaweeds
-p1 <- ggplot(community, aes(x= Wrack_treatment , y= Total_Algae_Consumed)) + theme_bw() + geom_boxplot() + ggtitle("") + ylab("Total Seaweed Consumed (g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
-
-p2 <- ggplot(community, aes(x= Wrack_treatment , y= Total_Benthic_Algae_Consumed )) + theme_bw() + geom_boxplot() + ggtitle("") + ylab("Total NBS consumed(g)") + xlab("Wrack treatment") + theme(plot.title =element_text(hjust = 0.5))
-
-
-fig1.5 <-grid.arrange(p1, p2, ncol = 2)
-#lets look at how NATIVE BENTHIC SEAWEED consumption differs between treatments
-
-
 #Figure 4 entire community plot
+community<-read.csv("Comm grazer exp.csv", header = T)
+
+commplot <- ggplot(community, aes(x = Algae_trt, y = Algae_Wd, fill = fct_rev(Wrack_treatment))) + xlab("") + 
+  ylab("Seaweed consumed (g)") + 
+  ggtitle("") + theme() + geom_boxplot() + 
+  theme_minimal() + 
+  scale_x_discrete(limits = c("Wrack", "Centroceras", "Ulva", "Silvetia"), 
+                   labels = c("Wrack" = "Kelp Devilweed", "Centroceras" = "C. clavulatum", "Ulva" = "Ulva spp", "Silvetia" = "S. compressa")) + 
+  theme(axis.text = element_text(size = 14),
+        axis.text.x = element_text(size = 14, color = "black"),
+        axis.title.y = element_text(size = 12)) +
+        geom_vline(xintercept = c(1.6), linetype = "dot") + 
+        fabs(fill = "Wrack treatment") + 
+  scale_fill_manual(values = c("Native" = "gray 80", "Invasive" = "white")) + 
+  theme(legend.title = element_text(size = 12), panel.border = element_rect(color = "black", fill = NA, size = 0.5))
 
 
-commplot <- ggplot(community, aes(x = Algae_trt, y = Algae_Wd,  fill = fct_rev(Wrack_treatment))) +
-  xlab("") +
-  ylab("Seaweed consumed (g)") +
-  ggtitle("") +
-  theme() +
-  geom_boxplot() +
-  theme_minimal() +
-  scale_x_discrete(limits = c("Wrack", "Centroceras", "Ulva", "Silvetia"),
-                   labels = c("Wrack" = " kelp     devilweed", "Centroceras" = "red seaweed", "Ulva" = "sea lettuce", "Silvetia" = "brown rockweed")) +
-  theme(axis.text = element_text(size = 12),
-        axis.text.x = element_text(size = 12, color =  "black")) +
-  geom_vline(xintercept = c(1.5), linetype = "dotted") +
-labs(fill = "Wrack treatment") +
-  scale_fill_manual(values = c("Native" = "gray 80", "Invasive" = "white")) +
-theme(legend.title = element_text(size = 12),
-        panel.border = element_rect(color = "black", fill = NA, size = 0.5))
-
-# Display the plot
 print(commplot)
+
 
 
 ```
