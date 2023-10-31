@@ -1120,7 +1120,7 @@ perf_fig <- ggplot(performance, aes(x = diet, y = terminal_dry_tissue_mass, fill
          axis.text.x = element_text(size = 12, color = "black"), 
          strip.background = element_blank() ) + 
   facet_grid(grazer_spp. ~ ., scales = "free_y") +
-  scale_x_discrete( limits = c("starved", "macro", "mixed", "sargassum"), labels = c("starved" = "starved", "macro" = "kelp", "mixed" = "mixed", "sargassum" = "devilweed") ) + 
+  scale_x_discrete( limits = c("starved", "macro", "mixed", "sargassum"), labels = c("starved" = "Starved", "macro" = "Kelp", "mixed" = "Mixed", "sargassum" = "Devilweed") ) + 
   geom_vline(xintercept = c(1.5), linetype = "dotted")
 
 perf_fig
@@ -1188,7 +1188,7 @@ fig3 <- ggplot(choice, aes(x = algae_spp., y = algae_Wd, fill = algae_spp.)) +
              labeller = as_labeller(c("Haliotis cracherodii" = "Black abalone", "Tegula" = "Turban snails", "Pachy" = "Shore crabs", "Pagurus" = "Hermit crabs"))) + 
   theme( strip.text = element_text(size = 12), strip.text.y = element_blank()) +
   scale_x_discrete(limits = c("macro", "sargassum"), 
-                   labels = c("macro" = "kelp", "sargassum" = "devilweed")) + 
+                   labels = c("macro" = "Kelp", "sargassum" = "Devilweed")) + 
   theme(axis.text.x = element_text(size = 12, color = "black"))
 
 fig3
@@ -1211,6 +1211,24 @@ commplot <- ggplot(community, aes(x = Algae_trt, y = Algae_Wd, fill = fct_rev(Wr
   scale_fill_manual(values = c("Native" = "gray 80", "Invasive" = "white")) + 
   theme(legend.title = element_text(size = 12), panel.border = element_rect(color = "black", fill = NA, size = 0.5))
 
+
+print(commplot)
+
+
+commplot <- ggplot(community, aes(x = Algae_trt, y = Algae_Wd, fill = fct_rev(Wrack_treatment))) +
+  xlab("") +
+  ylab("Seaweed consumed (g)") +
+  geom_boxplot() +
+  scale_x_discrete(limits = factor(c("Wrack", "Centroceras", "Ulva", "Silvetia")),
+                   labels = c("Wrack" = "  Kelp    Devilweed", "Centroceras" = "C. clavulatum", "Ulva" = "Ulva spp", "Silvetia" = "S. compressa")) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 14),
+        axis.text.x = element_text(size = 14, color = "black"),
+        axis.title.y = element_text(size = 16)) +
+  geom_vline(xintercept = 1.6, linetype = "dotted") +
+  scale_fill_manual(name = "Wrack treatment", values = c("Native" = "gray80", "Invasive" = "white")) +
+  theme(legend.title = element_text(size = 12),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5))
 
 print(commplot)
 
