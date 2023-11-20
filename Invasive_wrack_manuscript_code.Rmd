@@ -1051,7 +1051,7 @@ anova(scale_test)
 #### lets test if consumption of WRACK differed. ie., is one wrack species less palatable than the other.?
 #H0: There is no difference in consumption between S. horneri and M. pyrifera 
 #HA: There is a difference in  consumption between S. horneri and M. pyrifera 
-t.test(comm$Total_Wrack_Algae_Consumed~comm$Wrack_treatment, alt="two.sided", paired=F,conf.level=0.95)
+t.test(comm$Total_Wrack_Algae_Consumed~comm$Algae_Spp., alt="two.sided", paired=F,conf.level=0.95)
 ##we reject the null hypothesis and embrace the alternative, there was a difference in consumption between wrack species. Consumption of M. pyrifera was significantly higher (p=3.457e-08)
 ggplot(comm, aes(x = Wrack_treatment, y=Total_Wrack_Algae_Consumed)) + geom_boxplot()
 
