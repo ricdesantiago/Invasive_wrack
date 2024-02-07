@@ -37,7 +37,7 @@ library(ggpubr)
 library(rstatix)
 library(emmeans)
 library(performance)
-
+library(lmerTest)
 
 setwd("~/Documents/GitHub/Invasive_wrack")
 #hi
@@ -430,29 +430,19 @@ view(performance)
 ggplot(performance, aes(y=dry_mass_percent_change, x=diet)) + geom_boxplot()
 
 # Fit a mixed-effects model with interaction between diet and detritivore species
-x<- lmer(terminal_dry_tissue_mass ~ diet * grazer_spp. + (1 | est_tissue_dry_mass_i), data = performance)
+x<- lmer(terminal_dry_tissue_mass ~ diet * grazer_spp. * (1 | est_tissue_dry_mass_i), data = performance)
 
 # Run an ANOVA on the interaction model
-anova(x)
-
-
-# Run post hoc tests for diet and species interactions
-posthoc_diet <- emmeans(model, pairwise ~ diet, adjust = "tukey")
-posthoc_species <- emmeans(model, pairwise ~ grazer_spp., adjust = "tukey")
-
-# Summarize the post hoc test results
-summary(posthoc_diet)
-summary(posthoc_species)
+Anova(x, type = "III")
+summary(x)
 
 #run model diognostics
 check_model(x)
 
-#There is a significant interaction between diet and detritivore species, I think these needs to be looked at seperately. 
+#There is a significant interaction between diet and detritivore species
 
 perfint<-ggplot(performance, aes(y=terminal_dry_tissue_mass , x= diet)) 
 perfint +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
-
-
 
 
 ```
@@ -470,7 +460,7 @@ ggplot(redabaloneperformance, aes(y=terminal_dry_tissue_mass, x=diet)) + geom_bo
 #histogram
 ggplot(redabaloneperformance, aes(x=terminal_dry_tissue_mass)) + geom_histogram(binwidth=0.1)
 #the data look fairly normal when combined, the histogram shows the distribution tailes to the left having some numbers in the negative, this is likely due to the starved treatment.
-##we will conduct ANOVA or GLMM if assumptions are met. Starved treatment is used as a control and to detect if any food treatment is worse than starvation (e.g., toxic and harmful algae), thus, starved treatments will not be used unless a food treatment causes more mass loss than starved. 
+
 
 #explore the data 
 
@@ -614,22 +604,28 @@ ggplot(redabaloneperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) 
 ### Red Abalone Analysis
 
 ```{r}
+#load data
+performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
+view(performance)
+na.omit(performance)
+
+is.numeric(performance$wetmass_total_Wd)
+performance$wetmass_total_Wd<-as.numeric(performance$wetmass_total_Wd)
+is.factor(performance$treatment)
+performance$treatment<-as.factor(performance$treatment)
+
+#subset data for abalone
+redabaloneperformance<-subset(performance, grazer_spp.== "red abalone")
+view(redabaloneperformance)
 
 #remove starved treatment
 abmodels<-subset(redabaloneperformance, !diet== "starved")
-view(abmodels)
 
 #look at the data without starved treatment
 #histogram
 ggplot(abmodels, aes(x=terminal_dry_tissue_mass)) + geom_histogram(binwidth=01)
 #when combined, the terminal dry masses show a left leaning distribution
  
-#before proceeding check that there is no correlation between estimated initial dry weights and proportional change
-reg<- plot(abmodels$est_tissue_dry_mass_i,abmodels$dry_mass_percent_change, frame = FALSE) +
-abline(lm(abmodels$dry_mass_percent_change ~ abmodels$est_tissue_dry_mass_i)) 
-
-#there seems to be a slight correlation between initial dry mass and percent change. Bigger individuals change less. Thus we will use initial weight estimates as a covariate to look at the effect of diet on size. By doing this, we account for initial weights but lose one degree of freedom
-
 abmodel <- lm(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i , data = abmodels)
 summary(abmodel)
 # Create a QQ plot of residuals
@@ -639,21 +635,20 @@ plot(abmodel)
 
 #testing normality with a Shapiro-Wilk test
 shapiro_test(residuals(abmodel))
-#SW test fails to reject the Ho(p=0.594), the residuals are normally distributed
+#SW test fails to reject the Ho(p=0.144), the residuals are normally distributed
 
 bartlett.test(terminal_dry_tissue_mass ~ diet, data=abmodels)
 #Bartlett test fails to reject the null Ho (p-value =0.179), thus we accept the hypothesis that our variances are equal
 
-#Assumptions for ANOVA are met, we can now run the analysis to answer the question:
-
-#lets use a type II ANOVA, a main effects model with type II sum of squares which reflects the unique contribution of each variable after adjusting for all other variables. This can adjust the effect of starting weight and let us focus on diet effects.
-
 ## H0: There is no relationship between diet and abalone weights
 ## HA: There is a relationship between diet and abalone weights 
 abmodel <- aov(terminal_dry_tissue_mass ~ diet + est_tissue_dry_mass_i , data = abmodels)
-Anova(abmodel, type = "II")
-#We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.0006724)
+Anova(abmodel, type = "III")
+#We reject the H0 and embrace HA, Diet impacts abalone weights (p=0.000774)
 
+#create LMEM to see how diet influences final mass and control for initial dry mass
+abmodel_final <- lmer(terminal_dry_tissue_mass ~ diet + (1|est_tissue_dry_mass_i) , data = abmodels)
+summary(abmodel_final)
 #check residuals
 par(mfrow = c(2,2))
 plot(abmodel)
@@ -665,7 +660,7 @@ plot(redab.aov.HSD1)
 #all treatments differ from each other
 
 
-#for reference, lets see how each diet treatment compares to starved
+#########for reference, lets see how each diet treatment compares to starved
 
 # Create subsets based on categories
 abstarved <- subset(redabaloneperformance, diet == "starved")$terminal_dry_tissue_mass
@@ -805,7 +800,17 @@ ggplot(tegulaperformance, aes(x=diet, y=est_total_dry_mass_i , fill= diet)) + ge
 ### Tegula Analysis
 
 ```{r}
+#load data
+performance<-read.csv("PerformanceAssays2020.csv", header=TRUE)
+view(performance)
+na.omit(performance)
 
+is.numeric(performance$wetmass_total_Wd)
+performance$wetmass_total_Wd<-as.numeric(performance$wetmass_total_Wd)
+is.factor(performance$treatment)
+performance$treatment<-as.factor(performance$treatment)
+#subset data for tegula
+tegulaperformance<-subset(performance, grazer_spp.== "tegula")
 
 #remove starved treatment
 tegmodels<-subset(tegulaperformance, !diet== "starved")
@@ -833,36 +838,26 @@ bartlett.test(terminal_dry_tissue_mass ~ diet , data=tegmodels)
 #Bartlet test fails to reject the null Ho (p-value =0.7006), thus we accept the hypothesis that our variances are equal
 
 
-#Assumptions for ANCOVA are met, we can now run the analysis to answer the question:
-
-#ANCOVA
-#first we test if there is an interaction between the initial weights and the diets
-int2<-ggplot(tegmodels, aes(y=terminal_dry_tissue_mass , x= est_tissue_dry_mass_i)) 
- 
-int2 +  geom_jitter(aes(col=diet)) + geom_smooth(aes(col=diet), method="lm", se=F)
-
-tegmodel <- lm(terminal_dry_tissue_mass ~ est_tissue_dry_mass_i * diet , data = tegmodels)
-anova(tegmodel)
-#There is no interaction between the dependent variable and factor (p=0.60284), we can test for significant effect of the factor without the interaction to ask the question "Does diet impact tegula weight?"
 
 ## H0: There is no relationship between diet and tegula weights
 ## HA: There is a relationship between diet and tegula weights
-tegmodel2 <- aov(terminal_dry_tissue_mass ~ diet * est_tissue_dry_mass_i  , data = tegmodels)
-Anova(tegmodel2, type = "II") 
-summary(tegmodel2)
-
-#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.0253)
  
+tegmodel <- aov(terminal_dry_tissue_mass ~ diet + est_tissue_dry_mass_i , data = tegmodels)
+Anova(tegmodel, type = "III")
+#We reject the H0 and embrace HA, Diet impacts tegula weights (p=0.02)
+
+#create LMEM to see how diet influences final mass and control for initial dry mass
+tegmodel_final <- lmer(terminal_dry_tissue_mass ~ diet + (1| est_tissue_dry_mass_i) , data = tegmodels)
+summary(tegmodel_final)
+
 #check residuals
 par(mfrow = c(2,2))
-plot(tegmodel2)
+plot(tegmodel_final)
 
 #conduct Tukeys post hoc test to see how the treatments differ
-redab.aov.HSD1 <- HSD.test(tegmodel2 , trt = 'diet') 
-print(redab.aov.HSD1)
-plot(redab.aov.HSD1)
-#all treatments differ from each other
-
+tegab.aov.HSD1 <- HSD.test(tegmodel, trt = 'diet') 
+print(tegab.aov.HSD1)
+plot(tegab.aov.HSD1)
 
 #for reference, lets see how each diet treatment compares to starved
 
